@@ -124,6 +124,8 @@ def send_ExperimentDataImage(M):
     time_h = [i * 3600 for i in range(int(exp_endTime) // 3600 + 1)]
     time_h_label = [str(i) for i in range(int(exp_endTime) // 3600 + 1)]
     
+    lock.acquire()
+    
     fig, axes = plt.subplots(2, 3, figsize=(16/3, 9/3))
     fig.subplots_adjust(hspace=0.5,wspace=0.5)
     
@@ -161,6 +163,8 @@ def send_ExperimentDataImage(M):
     plt.close()
     img_buf.close()
     
+    lock.release()
+    
     str(sysData[M]['Experiment']['cycles'])
     
     embed = DiscordEmbed(title=M + " Cycle " + str(sysData[M]['Experiment']['cycles']),
@@ -184,7 +188,7 @@ lock=Lock()
 
 theValue = 1.0
 periodTime = 5 # seconds
-totalExperimentTime = 36 # hours
+# totalExperimentTime = 36 # hours
 
 
 #Sysdata is a structure created for each device and contains the setup / measured data related to that device during an experiment. All of this information is passed into the user interface during an experiment.
@@ -206,7 +210,7 @@ sysData = {'M0' : {
    'UV' : {'WL' : 'UV', 'default': 0.5, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
    'Heat' : {'default': 0.0, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0,'record' : []},
    'Thermostat' : {'default': 37.0, 'target' : 0.0, 'max': 50.0, 'min' : 0.0,'ON' : 0,'record' : [],'cycleTime' : 30.0, 'Integral' : 0.0,'last' : -1},
-   'Experiment' : {'indicator' : 'USR0', 'startTime' : 'Waiting', 'startTimeRaw' : 0, 'ON' : 0,'cycles' : 0, 'cycleTime' : 60.0,'threadCount' : 0},
+   'Experiment' : {'indicator' : 'USR0', 'startTime' : 'Waiting', 'startTimeRaw' : 0, 'ON' : 0,'cycles' : 0, 'cycleTime' : 60.0, 'threadCount' : 0, 'totalExperimentTime' : 24},
    'Terminal' : {'text' : ''},
    'AS7341' : {
         'spectrum' : {'nm410' : 0, 'nm440' : 0, 'nm470' : 0, 'nm510' : 0, 'nm550' : 0, 'nm583' : 0, 'nm620' : 0, 'nm670' : 0,'CLEAR' : 0, 'NIR' : 0,'DARK' : 0,'ExtGPIO' : 0, 'ExtINT' : 0, 'FLICKER' : 0},
@@ -2243,7 +2247,7 @@ def SetCycleTime(M, cycleTime):
         M=sysItems['UIDevice']
     sysData[M]['Experiment']['cycleTime'] = float(cycleTime)
     
-    print("Current CycleTime : " + str(float(cycleTime)))
+    print(M + " Current CycleTime : " + str(float(cycleTime)))
 
     return ('', 204)
 
@@ -2267,16 +2271,16 @@ def SetTheValue(M, inputValue):
 @application.route("/SetTotalExperimentTime/<inputValue>/<M>", methods=['POST'])
 def SetTotalExperimentTime(M, inputValue):
     global sysData
-    global totalExperimentTime
+    
     M = str(M)
     if (M == "0"):
         M = sysItems['UIDevice']
 
-    totalExperimentTime = float(inputValue)
-    if totalExperimentTime*3600 <= sysData[M]['Experiment']['cycleTime']:
-        totalExperimentTime = 1.25*(sysData[M]['Experiment']['cycleTime'] / 3600.0)
+    sysData[M]['Experiment']['totalExperimentTime'] = float(inputValue)
+    if sysData[M]['Experiment']['totalExperimentTime']*3600 <= sysData[M]['Experiment']['cycleTime']:
+        sysData[M]['Experiment']['totalExperimentTime'] = 1.25*(sysData[M]['Experiment']['cycleTime'] / 3600.0)
 
-    print("Current Total Experiment Time (hours) : " + str(float(totalExperimentTime)))
+    print(M + " Current Total Experiment Time (hours) : " + str(float(sysData[M]['Experiment']['totalExperimentTime'])))
 
     return ('', 204)
 
@@ -2493,7 +2497,7 @@ def runExperiment(M,placeholder):
     print("total experiment time : ", sysData[M]['Experiment']['cycles'] * sysData[M]['Experiment']['cycleTime'])
 
     #Now we run this function again if the automated experiment is still going.
-    if sysData[M]['Experiment']['cycles'] * sysData[M]['Experiment']['cycleTime'] >= totalExperimentTime*3600:
+    if sysData[M]['Experiment']['cycles'] * sysData[M]['Experiment']['cycleTime'] >= sysData[M]['Experiment']['totalExperimentTime']*3600:
         sysData[M]['Experiment']['ON'] = 0
         sysData[M]['OD']['ON'] = 0
         addTerminal(M, 'Experiment End')

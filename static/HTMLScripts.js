@@ -33,6 +33,9 @@ function updateData(data){
         document.getElementById("termI").innerHTML=data.Terminal.text;
         
         //Update Output Indicators
+        document.getElementById("CycleTimeCurrent").innerHTML=data.Experiment.cycleTime.toFixed(3);
+        document.getElementById("TotalExperimentTimeCurrent").innerHTML=data.Experiment.totalExperimentTime.toFixed(3);
+
         document.getElementById("LEDADefault").innerHTML=data.LEDA.default.toFixed(3);
         document.getElementById("LEDACurrent").innerHTML=data.LEDA.target.toFixed(3);
         document.getElementById("LEDBDefault").innerHTML=data.LEDB.default.toFixed(3);
