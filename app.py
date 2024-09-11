@@ -1219,6 +1219,18 @@ def CustomProgram(M):
             SetOutputOn(M,'UV',1) #Activate UV
             time.sleep(Dose) #Wait for dose to be administered
             SetOutputOn(M,'UV',0) #Deactivate UV
+
+        elif (program == "C7"):  # test program
+            pumpTime = 30
+            UVTime = 10
+            SetOutputOn(M, 'UV', 1)  # Activate UV
+            time.sleep(UVTime)
+            SetOutputOn(M, 'UV', 0)
+            SetOutputOn(M, 'Pump3', 1)  # Activate Pump3
+            SetOutputOn(M, 'Pump4', 1)  # Activate Pump4
+            time.sleep(pumpTime)
+            SetOutputOn(M, 'Pump3', 0)
+            SetOutputOn(M, 'Pump4', 0)
                 
                 
     
@@ -2019,6 +2031,20 @@ def Zigzag(M):
 
 
 
+
+
+@application.route("/SetCycleTime/<cycleTime>/<M>",methods=['POST'])
+def SetCycleTime(M, cycleTime):
+    M = str(M)
+    if (M=="0"):
+        M=sysItems['UIDevice']
+    sysData[M]['Experiment']['cycleTime'] = float(cycleTime)
+
+    return ('', 204)
+
+
+
+
 @application.route("/ExperimentReset",methods=['POST'])
 def ExperimentReset():
     #Resets parameters/values of a given experiment.
@@ -2111,7 +2137,7 @@ def runExperiment(M,placeholder):
     MeasureTemp(M,'Internal') #Measuring all temperatures
     MeasureTemp(M,'External')
     MeasureTemp(M,'IR')
-    MeasureFP(M) #And now fluorescent protein concentrations. 
+    MeasureFP(M) #And now fluorescent protein concentrations.
 	
     if (sysData[M]['Experiment']['ON']==0): #We do another check post-measurement to see whether we need to end the experiment.
         turnEverythingOff(M)
@@ -2146,6 +2172,7 @@ def runExperiment(M,placeholder):
     
     Pump2Ontime=sysData[M]['Experiment']['cycleTime']*1.05*abs(sysData[M]['Pump2']['target'])*sysData[M]['Pump2']['ON']+0.5 #The amount of time Pump2 is going to be on for following RegulateOD above.
     time.sleep(Pump2Ontime) #Pause here is to prevent output pumping happening at the same time as stirring.
+
     
     SetOutputOn(M,'Stir',1) #Start stirring again.
 
@@ -2210,7 +2237,8 @@ def runExperiment(M,placeholder):
     if (sleeptime<0):
         sleeptime=0
         addTerminal(M,'Experiment Cycle Time is too short!!!')    
-        
+
+    print(sleeptime)
     time.sleep(sleeptime)
     LightActuation(M,0) #Turn light actuation off if it is running.
     addTerminal(M,'Cycle ' + str(sysData[M]['Experiment']['cycles']) + ' Complete')
