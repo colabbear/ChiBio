@@ -120,6 +120,13 @@
 
           <br><br>
 
+          <b>Total Experiment Time</b>
+              <br> New:
+              <input id="TotalExperimentTimeInput" type="number" size="5" value=0 style="width: 4em"/>
+          <button id="TotalExperimentTimeSwitch" >SetTotalExperimentTime</button>
+
+          <br><br>
+
           <h3>Experiment</h3>
           
      
@@ -1560,7 +1567,26 @@ function TitleFailure() {
              })
         });
     </script>
-    
+
+
+
+    <script>
+        $(function() {
+            $('#TotalExperimentTimeSwitch').click(function(){
+
+              var value = $('#TotalExperimentTimeInput').val();
+              var targetURL = '/SetTotalExperimentTime/' + value + '/0';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
     
     
     <script>
