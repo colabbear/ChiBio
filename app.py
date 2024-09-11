@@ -19,6 +19,7 @@ import copy
 import csv
 import smbus2 as smbus
 from time import perf_counter_ns
+import requests
 
 class timeEx:
     @staticmethod
@@ -28,6 +29,18 @@ class timeEx:
         while current < end:
             current = time.perf_counter_ns()
             time.sleep(0)
+            
+with open("./DISCORD_WEBHOOK_URL.txt", encoding="UTF-8") as f:
+    temp = f.readline()
+DISCORD_WEBHOOK_URL = temp
+
+def send_message(msg):
+    """discord message"""
+    now = datetime.now()
+    message = {"content": f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] {str(msg)}"}
+    requests.post(DISCORD_WEBHOOK_URL, data=message)
+    print(message)            
+
 
 
 application = Flask(__name__)
@@ -2177,6 +2190,8 @@ def ExperimentStartStop(M,value):
         sysDevices[M]['Experiment'].setDaemon(True)
         sysDevices[M]['Experiment'].start();
         
+        send_message("Experiment Start")
+        
     else:
         sysData[M]['Experiment']['ON']=0
         sysData[M]['OD']['ON']=0
@@ -2345,8 +2360,11 @@ def runExperiment(M,placeholder):
 
     #Now we run this function again if the automated experiment is still going.
     if sysData[M]['Experiment']['cycles'] * sysData[M]['Experiment']['cycleTime'] >= totalExperimentTime*3600:
+        sysData[M]['Experiment']['ON'] = 0
+        sysData[M]['OD']['ON'] = 0
+        addTerminal(M, 'Experiment End')
         turnEverythingOff(M)
-        addTerminal(M,'Experiment End')
+        send_message("Experiment End")
 
     elif (sysData[M]['Experiment']['ON'] and sysData[M]['Experiment']['threadCount']==currentThread):
         sysDevices[M]['Experiment']=Thread(target = runExperiment, args=(M,'placeholder'))
@@ -2356,6 +2374,7 @@ def runExperiment(M,placeholder):
     else: 
         turnEverythingOff(M)
         addTerminal(M,'Experiment Stopped')
+        send_message("Experiment Stopped")
 
     for thread in threading.enumerate():
         print('***', thread.name)
