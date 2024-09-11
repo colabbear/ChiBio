@@ -27,6 +27,8 @@ lock=Lock()
         
 #Initialise data structures.
 
+theValue = 1.0
+
 #Sysdata is a structure created for each device and contains the setup / measured data related to that device during an experiment. All of this information is passed into the user interface during an experiment.
 sysData = {'M0' : {
    'UIDevice' : 'M0',
@@ -691,6 +693,7 @@ def PumpModulation(M,item):
     global sysData
     global sysItems
     global sysDevices
+    global theValue
     
     sysDevices[M][item]['threadCount']=(sysDevices[M][item]['threadCount']+1)%100 #Index of the particular thread running.
     currentThread=sysDevices[M][item]['threadCount']
@@ -711,7 +714,10 @@ def PumpModulation(M,item):
     Time1=datetime.now()
     cycletime=sysData[M]['Experiment']['cycleTime']*1.05 #We make this marginally longer than the experiment cycle time to avoid too much chaos when you come back around to pumping again.
     
-    Ontime=cycletime*abs(sysData[M][item]['target'])
+    # Ontime=cycletime*abs(sysData[M][item]['target'])
+    Ontime=cycletime
+    print("Pump cycletime : " + str(cycletime))
+    print("Pump Ontime : " + str(Ontime))
     
     # Decided to remove the below section in order to prevent media buildup in the device if you are pumping in very rapidly. This check means that media is removed, then added. Removing this code means these happen simultaneously.
     #if (item=="Pump1" and abs(sysData[M][item]['target'])<0.3): #Ensuring we run Pump1 after Pump2.
@@ -721,13 +727,13 @@ def PumpModulation(M,item):
     
     if (sysData[M][item]['target']>0 and currentThread==sysDevices[M][item]['threadCount']): #Turning on pumps in forward direction
         sysDevices[M][item]['active']=1
-        setPWM(M,'Pumps',sysItems[item]['In1'],1.0*float(sysData[M][item]['ON']),0)
+        setPWM(M,'Pumps',sysItems[item]['In1'],theValue*float(sysData[M][item]['ON']),0)
         setPWM(M,'Pumps',sysItems[item]['In2'],0.0*float(sysData[M][item]['ON']),0)
         sysDevices[M][item]['active']=0
     elif (sysData[M][item]['target']<0 and currentThread==sysDevices[M][item]['threadCount']): #Or backward direction.
         sysDevices[M][item]['active']=1
         setPWM(M,'Pumps',sysItems[item]['In1'],0.0*float(sysData[M][item]['ON']),0)
-        setPWM(M,'Pumps',sysItems[item]['In2'],1.0*float(sysData[M][item]['ON']),0)
+        setPWM(M,'Pumps',sysItems[item]['In2'],theValue*float(sysData[M][item]['ON']),0)
         sysDevices[M][item]['active']=0
   
     time.sleep(Ontime)
@@ -744,6 +750,8 @@ def PumpModulation(M,item):
     elapsedTime=Time2-Time1
     elapsedTimeSeconds=round(elapsedTime.total_seconds(),2)
     Offtime=cycletime-elapsedTimeSeconds
+    print("Pump Offtime : " + str(Offtime))
+
     if (Offtime>0.0):
         time.sleep(Offtime)   
     
@@ -1067,8 +1075,9 @@ def CustomProgram(M):
     #Subsequent few lines reads in external parameters from a file if you are using any.
     fname='InputParameters_' + str(M)+'.csv'
 	
-    with open(fname, 'rb') as f:
+    with open(fname, 'r') as f:
         reader = csv.reader(f)
+        print(reader)
         listin = list(reader)
     Params=listin[0]
     addTerminal(M,'Running Program = ' + str(program) + ' on device ' + str(M))
@@ -1220,17 +1229,17 @@ def CustomProgram(M):
             time.sleep(Dose) #Wait for dose to be administered
             SetOutputOn(M,'UV',0) #Deactivate UV
 
-        elif (program == "C7"):  # test program
-            pumpTime = 30
-            UVTime = 10
-            SetOutputOn(M, 'UV', 1)  # Activate UV
-            time.sleep(UVTime)
-            SetOutputOn(M, 'UV', 0)
-            SetOutputOn(M, 'Pump3', 1)  # Activate Pump3
-            SetOutputOn(M, 'Pump4', 1)  # Activate Pump4
-            time.sleep(pumpTime)
-            SetOutputOn(M, 'Pump3', 0)
-            SetOutputOn(M, 'Pump4', 0)
+    elif (program=="C7"):
+        pumpTime = 3600
+        # UVTime = 10
+        # SetOutputOn(M, 'UV', 1)
+        # time.sleep(UVTime)
+        # SetOutputOn(M, 'UV', 0)
+        SetOutputOn(M, 'Pump3', 1)
+        SetOutputOn(M, 'Pump4', 1)
+        time.sleep(pumpTime)
+        SetOutputOn(M, 'Pump3', 0)
+        SetOutputOn(M, 'Pump4', 0)
                 
                 
     
@@ -2039,8 +2048,28 @@ def SetCycleTime(M, cycleTime):
     if (M=="0"):
         M=sysItems['UIDevice']
     sysData[M]['Experiment']['cycleTime'] = float(cycleTime)
+    
+    print("Current CycleTime : " + str(float(cycleTime)))
 
     return ('', 204)
+
+@application.route("/SetTheValue/<inputValue>/<M>", methods=['POST'])
+def SetTheValue(M, inputValue):
+    global theValue
+    M = str(M)
+    if (M == "0"):
+        M = sysItems['UIDevice']
+
+    theValue = float(inputValue)
+    if theValue > 1.0:
+        theValue = 1.0
+    elif theValue < 0.001:
+        theValue = 0.001
+
+    print("Current The Value : " + str(float(theValue)))
+
+    return ('', 204)
+
 
 
 
@@ -2090,6 +2119,8 @@ def ExperimentStartStop(M,value):
         addTerminal(M,'Experiment Stopping at end of cycle')
         SetOutputOn(M,'Pump1',0)
         SetOutputOn(M,'Pump2',0)
+        SetOutputOn(M,'Pump3',0)
+        SetOutputOn(M,'Pump4',0)
         SetOutputOn(M,'Stir',0)
         SetOutputOn(M,'Thermostat',0)
         
@@ -2098,6 +2129,8 @@ def ExperimentStartStop(M,value):
     
     
 def runExperiment(M,placeholder):
+    for thread in threading.enumerate():
+        print('***', thread.name)
     #Primary function for running an automated experiment.
     M=str(M)
    
@@ -2137,7 +2170,7 @@ def runExperiment(M,placeholder):
     MeasureTemp(M,'Internal') #Measuring all temperatures
     MeasureTemp(M,'External')
     MeasureTemp(M,'IR')
-    MeasureFP(M) #And now fluorescent protein concentrations.
+    MeasureFP(M) #And now fluorescent protein concentrations. 
 	
     if (sysData[M]['Experiment']['ON']==0): #We do another check post-measurement to see whether we need to end the experiment.
         turnEverythingOff(M)
@@ -2163,19 +2196,20 @@ def runExperiment(M,placeholder):
         RegulateOD(M) #Function that calculates new target pump rates, and sets pumps to desired rates. 
     
     LightActuation(M,1) 
-    
+    print("custom : "+str(sysData[M]['Custom']['ON']))
     if (sysData[M]['Custom']['ON']==1): #Check if we have enabled custom programs
         CustomThread=Thread(target = CustomProgram, args=(M,)) #We run this in a thread in case we are doing something slow, we dont want to hang up the main l00p. The comma after M is to cast the args as a tuple to prevent it iterating over the thread M
         CustomThread.setDaemon(True)
         CustomThread.start();
+    for thread in threading.enumerate():
+        print('***', thread.name)
 
     
     Pump2Ontime=sysData[M]['Experiment']['cycleTime']*1.05*abs(sysData[M]['Pump2']['target'])*sysData[M]['Pump2']['ON']+0.5 #The amount of time Pump2 is going to be on for following RegulateOD above.
     time.sleep(Pump2Ontime) #Pause here is to prevent output pumping happening at the same time as stirring.
-
+    print("Pump2Ontime : " + str(Pump2Ontime))
     
     SetOutputOn(M,'Stir',1) #Start stirring again.
-
     if(sysData[M]['Experiment']['cycles']%10==9): #Dont want terminal getting unruly, so clear it each 10 rotations.
         clearTerminal(M)
     
@@ -2238,7 +2272,7 @@ def runExperiment(M,placeholder):
         sleeptime=0
         addTerminal(M,'Experiment Cycle Time is too short!!!')    
 
-    print(sleeptime)
+    print(sleeptime)        
     time.sleep(sleeptime)
     LightActuation(M,0) #Turn light actuation off if it is running.
     addTerminal(M,'Cycle ' + str(sysData[M]['Experiment']['cycles']) + ' Complete')
@@ -2252,6 +2286,10 @@ def runExperiment(M,placeholder):
     else: 
         turnEverythingOff(M)
         addTerminal(M,'Experiment Stopped')
+
+    for thread in threading.enumerate():
+        print('***', thread.name)
+
    
 
 
