@@ -32,7 +32,7 @@ sysData = {'M0' : {
    'UIDevice' : 'M0',
    'present' : 0,
    'presentDevices' : { 'M0' : 0,'M1' : 0,'M2' : 0,'M3' : 0,'M4' : 0,'M5' : 0,'M6' : 0,'M7' : 0},
-   'Version' : {'value' : 'Turbidostat V3.0','LED' : 1},
+   'Version' : {'value' : 'Turbidostat V3.0'},
    'DeviceID' : '',
    'time' : {'record' : []},
    'LEDA' : {'WL' : '395', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
@@ -42,9 +42,6 @@ sysData = {'M0' : {
    'LEDE' : {'WL' : '595', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
    'LEDF' : {'WL' : '623', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
    'LEDG' : {'WL' : '6500K', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
-   'LEDH' : {'WL' : '600', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0}, #80nm FWHM
-   'LEDI' : {'WL' : '550', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0}, #105nm FWHM
-   'LEDV' : {'WL' : 'White', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0,'ScaleFactor' : 0.4}, #Virtual LED which mixes LEDB and LEDI. ScaleFactor is something to balance between the LED intensites being combined if you want to tune the spectra. Could tune this if you want to get a specific white spectrum blue balance.
    'LASER650' : {'name' : 'LASER650', 'default': 0.5, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
    'UV' : {'WL' : 'UV', 'default': 0.5, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
    'Heat' : {'default': 0.0, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0,'record' : []},
@@ -112,6 +109,7 @@ for M in ['M1','M2','M3','M4','M5','M6','M7']:
 
 #sysItems stores information about digital addresses which is used as a reference for all devices.        
 sysItems = {
+    'DAC' : {'LEDA' : '00000100','LEDB' : '00000000','LEDC' : '00000110','LEDD' : '00000001','LEDE' : '00000101','LEDF' : '00000011','LEDG' : '00000010','LASER650' : '00000111'},
     'Multiplexer' : {'device' : 0 , 'M0' : '00000001','M1' : '00000010','M2' : '00000100','M3' : '00001000','M4' : '00010000','M5' : '00100000','M6' : '01000000','M7' : '10000000'},
     'UIDevice' : 'M0',
     'Watchdog' : {'pin' : 'P8_11','thread' : 0,'ON' : 1},
@@ -120,16 +118,13 @@ sysItems = {
     'Stir' : {'ONL' : 0x06, 'ONH' : 0x07, 'OFFL' : 0x08, 'OFFH' : 0x09},
     'Heat' : {'ONL' : 0x3E, 'ONH' : 0x3F, 'OFFL' : 0x40, 'OFFH' : 0x41},
     'UV' : {'ONL' : 0x42, 'ONH' : 0x43, 'OFFL' : 0x44, 'OFFH' : 0x45},
-    'LEDA' : {'ONL' : 0x0E, 'ONH' : 0x0F, 'OFFL' : 0x10, 'OFFH' : 0x11},# Only Led1
-    'LEDB' : {'ONL' : 0x16, 'ONH' : 0x17, 'OFFL' : 0x18, 'OFFH' : 0x19},#Both LEDs common 
-    'LEDC' : {'ONL' : 0x0A, 'ONH' : 0x0B, 'OFFL' : 0x0C, 'OFFH' : 0x0D},#Both LEDs common
-    'LEDD' : {'ONL' : 0x1A, 'ONH' : 0x1B, 'OFFL' : 0x1C, 'OFFH' : 0x1D},#Both LEDs Common
-    'LEDE' : {'ONL' : 0x22, 'ONH' : 0x23, 'OFFL' : 0x24, 'OFFH' : 0x25},#Only Led1
-    'LEDF' : {'ONL' : 0x1E, 'ONH' : 0x1F, 'OFFL' : 0x20, 'OFFH' : 0x21},#Both LEDs Common
-    'LEDG' : {'ONL' : 0x12, 'ONH' : 0x13, 'OFFL' : 0x14, 'OFFH' : 0x15},#Only Led1
-    'LEDH' : {'ONL' : 0x26, 'ONH' : 0x27, 'OFFL' : 0x28, 'OFFH' : 0x29},#Only Led2
-    'LEDI' : {'ONL' : 0x2E, 'ONH' : 0x2F, 'OFFL' : 0x30, 'OFFH' : 0x31},#Only Led2
-    'LEDJ' : {'ONL' : 0x36, 'ONH' : 0x37, 'OFFL' : 0x38, 'OFFH' : 0x39},#Only Led2 - same colour as LEDI so current not used.
+    'LEDA' : {'ONL' : 0x0E, 'ONH' : 0x0F, 'OFFL' : 0x10, 'OFFH' : 0x11},
+    'LEDB' : {'ONL' : 0x16, 'ONH' : 0x17, 'OFFL' : 0x18, 'OFFH' : 0x19},
+    'LEDC' : {'ONL' : 0x0A, 'ONH' : 0x0B, 'OFFL' : 0x0C, 'OFFH' : 0x0D},
+    'LEDD' : {'ONL' : 0x1A, 'ONH' : 0x1B, 'OFFL' : 0x1C, 'OFFH' : 0x1D},
+    'LEDE' : {'ONL' : 0x22, 'ONH' : 0x23, 'OFFL' : 0x24, 'OFFH' : 0x25},
+    'LEDF' : {'ONL' : 0x1E, 'ONH' : 0x1F, 'OFFL' : 0x20, 'OFFH' : 0x21},
+    'LEDG' : {'ONL' : 0x12, 'ONH' : 0x13, 'OFFL' : 0x14, 'OFFH' : 0x15},
     'Pump1' : {
         'In1' : {'ONL' : 0x06, 'ONH' : 0x07, 'OFFL' : 0x08, 'OFFH' : 0x09},
         'In2' : {'ONL' : 0x0A, 'ONH' : 0x0B, 'OFFL' : 0x0C, 'OFFH' : 0x0D},
@@ -211,7 +206,7 @@ def initialise(M):
     global sysItems;
     global sysDevices
 
-    for LED in ['LEDA','LEDB','LEDC','LEDD','LEDE','LEDF','LEDG','LEDH','LEDI','LEDV']:
+    for LED in ['LEDA','LEDB','LEDC','LEDD','LEDE','LEDF','LEDG']:
         sysData[M][LED]['target']=sysData[M][LED]['default']
         sysData[M][LED]['ON']=0
     
@@ -300,7 +295,10 @@ def initialise(M):
     sysData[M]['OD0']['target']=65000.0
     sysData[M]['OD0']['raw']=65000.0
     sysData[M]['OD']['device']='LASER650'
-
+    #sysData[M]['OD']['device']='LEDA'
+    
+    #if (M=='M0'):
+    #    sysData[M]['OD']['device']='LEDA'
     
     
     sysData[M]['Volume']['target']=20.0
@@ -379,56 +377,10 @@ def initialise(M):
     # getData=I2CCom(M,which,1,16,0x05,0,0)
     
 
-
-   
-
-
     scanDevices(M)
     if(sysData[M]['present']==1):
         turnEverythingOff(M)
-
-        V1_Present=0
-        V2_Present=0
-        # Now we will detect LED version FIrst checking for version 2
-        out=GetLight(M,['nm583'],10,10) #Measure with maximum gain (10) and for short period.
-        Baseline=out[0]
-        SetOutputOn(M,'LEDH',1) #Turn on LEDH at default level - should only be present in version 2
-        out=GetLight(M,['nm583'],10,10)
-        NewLevel=out[0]
-        SetOutputOn(M,'LEDH',0) #Turn off LEDH at default level - should only be present in version 2
-        if (NewLevel>Baseline*3+20):
-            V2_Present = 1
-        
-        
-        #print(str(datetime.now()) + ' Baseline: ' + str(Baseline) + ' New Level: ' + str(NewLevel))
-
-         # Now we will detect for Version 1
-        out=GetLight(M,['nm583'],10,10) #Measure with maximum gain (10) and for short period.
-        Baseline=out[0]
-        SetOutputOn(M,'LEDG',1) #Turn on LEDG at default level - should only be present in version 1
-        out=GetLight(M,['nm583'],10,10)
-        NewLevel=out[0]
-        SetOutputOn(M,'LEDG',0) #Turn off LEDG at default level - should only be present in version 1
-        #print(str(datetime.now()) + ' Baseline: ' + str(Baseline) + ' New Level: ' + str(NewLevel))
-
-
-        if (NewLevel>Baseline*3+20):
-            V1_Present = 1
-        
-        if (V1_Present==1 and V2_Present==0):
-            sysData[M]['Version']['LED']=1
-        elif (V1_Present==0 and V2_Present==1):
-            sysData[M]['Version']['LED']=2
-        else:
-            sysData[M]['Version']['LED']=1 #We have messed up somehow in this case and stuff isn't going to work well
-            print(str(datetime.now()) + " ERROR on " + str(M) +', this device has an unknown LED version. Defaulting to version 1.')
-
-        
-
-
-
-
-        print(str(datetime.now()) + " Initialised " + str(M) +', LED Version: ' + str(sysData[M]['Version']['LED']) + ', Device ID: ' + sysData[M]['DeviceID'])
+        print(str(datetime.now()) + " Initialised " + str(M) +', Device ID: ' + sysData[M]['DeviceID'])
 
     
     
@@ -449,7 +401,7 @@ def initialiseAll():
     
 def turnEverythingOff(M):
     # Function which turns off all actuation/hardware.
-    for LED in ['LEDA','LEDB','LEDC','LEDD','LEDE','LEDF','LEDG','LEDH','LEDI','LEDV']:
+    for LED in ['LEDA','LEDB','LEDC','LEDD','LEDE','LEDF','LEDG']:
         sysData[M][LED]['ON']=0
         
     sysData[M]['LASER650']['ON']=0
@@ -709,40 +661,11 @@ def SetOutput(M,item):
         sysData[M]['Zigzag']['target']=5.0
         sysData[M]['Zigzag']['SwitchPoint']=sysData[M]['Experiment']['cycles']
     
-    elif (item=='LEDA' or item=='LEDC' or item=='LEDD' or item=='LEDE' or item=='LEDF' or item=='LEDG' or item == 'LEDH'): 
+    elif (item=='LEDA' or item=='LEDB' or item=='LEDC' or item=='LEDD' or item=='LEDE' or item=='LEDF' or item=='LEDG'):
         setPWM(M,'PWM',sysItems[item],sysData[M][item]['target']*float(sysData[M][item]['ON']),0)
-    elif (item=='LEDB' or item == 'LEDI'): #We must handle these differently in case they are simultaneously being used to mix with LEDV
-        if (sysData[M]['LEDV']['target']*float(sysData[M]['LEDV']['ON'])>0): #If LEDV is on, we need to make up the difference in these other LEDs.
-            # First determine what is the intensity for this LED required to maintain current LEDV level. Note we have alreayd checked that LEDV is on.
-            if (item=='LEDB'):
-                LEDV_Intensity = sysData[M]['LEDV']['target']*sysData[M]['LEDV']['ScaleFactor'] 
-            elif (item == 'LEDI'):
-                LEDV_Intensity = sysData[M]['LEDV']['target']
-            
-            NewIntensity = sysData[M][item]['target']*float(sysData[M][item]['ON']) + LEDV_Intensity #Add on whatever extra intensity is required to maintain LEDV level.
-            if (NewIntensity>1.0):
-                NewIntensity=1.0
-                
-            setPWM(M,'PWM',sysItems[item],NewIntensity,0)
-
-        else:
-            setPWM(M,'PWM',sysItems[item],sysData[M][item]['target']*float(sysData[M][item]['ON']),0)
-    elif (item=='LEDV'): #This is the virtual white LED which is made by combinng LEDB and LEDI
-        LEDB_Intensity = sysData[M]['LEDV']['target']*float(sysData[M]['LEDV']['ON'])*sysData[M]['LEDV']['ScaleFactor'] #This is the intensity of the blue we want mixed into our white light
-        LEDB_Intensity = LEDB_Intensity + sysData[M]['LEDB']['target']*float(sysData[M]['LEDB']['ON']) #This adds the intensity of the blue we already have on
-
-        LEDI_Intensity = sysData[M]['LEDV']['target']*float(sysData[M]['LEDV']['ON']) #This is the intensity of the Lime, similar to above.
-        LEDI_Intensity = LEDI_Intensity + sysData[M]['LEDI']['target']*float(sysData[M]['LEDI']['ON']) 
-
-        if (LEDB_Intensity>1.0): #If we are exceeding the maximum intensity, we are going to force a saturation.
-            LEDB_Intensity=1.0
-        if (LEDI_Intensity>1.0):
-            LEDI_Intensity=1.0
-
-        setPWM(M,'PWM',sysItems['LEDB'],LEDB_Intensity,0)
-        setPWM(M,'PWM',sysItems['LEDI'],LEDI_Intensity,0)
         
-    elif(item == 'LASER650'): #This is if we are setting the Laser
+    else: #This is if we are setting the DAC. All should be in range [0,1]
+        register = int(sysItems['DAC'][item],2)
         
         value=sysData[M][item]['target']*float(sysData[M][item]['ON']) 
         if (value==0):
@@ -1296,6 +1219,18 @@ def CustomProgram(M):
             SetOutputOn(M,'UV',1) #Activate UV
             time.sleep(Dose) #Wait for dose to be administered
             SetOutputOn(M,'UV',0) #Deactivate UV
+
+        elif (program == "C7"):  # test program
+            pumpTime = 30
+            UVTime = 10
+            SetOutputOn(M, 'UV', 1)  # Activate UV
+            time.sleep(UVTime)
+            SetOutputOn(M, 'UV', 0)
+            SetOutputOn(M, 'Pump3', 1)  # Activate Pump3
+            SetOutputOn(M, 'Pump4', 1)  # Activate Pump4
+            time.sleep(pumpTime)
+            SetOutputOn(M, 'Pump3', 0)
+            SetOutputOn(M, 'Pump4', 0)
                 
                 
     
@@ -1835,7 +1770,7 @@ def csvData(M):
         sysData[M]['Pump4']['record'][-1],
         sysData[M]['Volume']['target'],
         sysData[M]['Stir']['target']*sysData[M]['Stir']['ON'],]
-    for LED in ['LEDA','LEDB','LEDC','LEDD','LEDE','LEDF','LEDG','LEDH','LEDI','LEDV','LASER650']:
+    for LED in ['LEDA','LEDB','LEDC','LEDD','LEDE','LEDF','LEDG','LASER650']:
         row=row+[sysData[M][LED]['target']]
     row=row+[sysData[M]['UV']['target']*sysData[M]['UV']['ON']]
     for FP in ['FP1','FP2','FP3']:
@@ -2096,6 +2031,20 @@ def Zigzag(M):
 
 
 
+
+
+@application.route("/SetCycleTime/<cycleTime>/<M>",methods=['POST'])
+def SetCycleTime(M, cycleTime):
+    M = str(M)
+    if (M=="0"):
+        M=sysItems['UIDevice']
+    sysData[M]['Experiment']['cycleTime'] = float(cycleTime)
+
+    return ('', 204)
+
+
+
+
 @application.route("/ExperimentReset",methods=['POST'])
 def ExperimentReset():
     #Resets parameters/values of a given experiment.
@@ -2188,7 +2137,7 @@ def runExperiment(M,placeholder):
     MeasureTemp(M,'Internal') #Measuring all temperatures
     MeasureTemp(M,'External')
     MeasureTemp(M,'IR')
-    MeasureFP(M) #And now fluorescent protein concentrations. 
+    MeasureFP(M) #And now fluorescent protein concentrations.
 	
     if (sysData[M]['Experiment']['ON']==0): #We do another check post-measurement to see whether we need to end the experiment.
         turnEverythingOff(M)
@@ -2223,6 +2172,7 @@ def runExperiment(M,placeholder):
     
     Pump2Ontime=sysData[M]['Experiment']['cycleTime']*1.05*abs(sysData[M]['Pump2']['target'])*sysData[M]['Pump2']['ON']+0.5 #The amount of time Pump2 is going to be on for following RegulateOD above.
     time.sleep(Pump2Ontime) #Pause here is to prevent output pumping happening at the same time as stirring.
+
     
     SetOutputOn(M,'Stir',1) #Start stirring again.
 
@@ -2287,7 +2237,8 @@ def runExperiment(M,placeholder):
     if (sleeptime<0):
         sleeptime=0
         addTerminal(M,'Experiment Cycle Time is too short!!!')    
-        
+
+    print(sleeptime)
     time.sleep(sleeptime)
     LightActuation(M,0) #Turn light actuation off if it is running.
     addTerminal(M,'Cycle ' + str(sysData[M]['Experiment']['cycles']) + ' Complete')
