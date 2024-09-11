@@ -105,12 +105,18 @@
           <br>
 
 
-     <!-- LED A -->
 
           <b>CycleTime</b>
               <br> New:
               <input id="CycleTimeInput" type="number" size="5" value=0 style="width: 4em"/>
           <button id="CycleTimeSwitch" >SetCycleTime</button>
+
+          <br><br>
+
+          <b>The Value related to pump flow rate</b>
+              <br> New:
+              <input id="TheValueInput" type="number" size="5" value=0 style="width: 4em"/>
+          <button id="TheValueSwitch" >SetTheValue</button>
 
           <br><br>
 
@@ -1525,6 +1531,25 @@ function TitleFailure() {
 
               var value = $('#CycleTimeInput').val();
               var targetURL = '/SetCycleTime/' + value + '/0';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
+
+
+    <script>
+        $(function() {
+            $('#TheValueSwitch').click(function(){
+
+              var value = $('#TheValueInput').val();
+              var targetURL = '/SetTheValue/' + value + '/0';
                $.ajax({
                    type:'POST',
                    url: targetURL,
