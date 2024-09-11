@@ -28,6 +28,8 @@ lock=Lock()
 #Initialise data structures.
 
 theValue = 1.0
+periodTime = 0.5 # seconds
+
 
 #Sysdata is a structure created for each device and contains the setup / measured data related to that device during an experiment. All of this information is passed into the user interface during an experiment.
 sysData = {'M0' : {
@@ -694,6 +696,7 @@ def PumpModulation(M,item):
     global sysItems
     global sysDevices
     global theValue
+    global periodTime
     
     sysDevices[M][item]['threadCount']=(sysDevices[M][item]['threadCount']+1)%100 #Index of the particular thread running.
     currentThread=sysDevices[M][item]['threadCount']
@@ -723,29 +726,64 @@ def PumpModulation(M,item):
     #if (item=="Pump1" and abs(sysData[M][item]['target'])<0.3): #Ensuring we run Pump1 after Pump2.
     #    waittime=cycletime*abs(sysData[M]['Pump2']['target']) #We want to wait until the output pump has stopped, otherwise you are very inefficient with your media since it will be pumping out the fresh media fromthe top of the test tube right when it enters.
     #    time.sleep(waittime+1.0)  
-        
-    
-    if (sysData[M][item]['target']>0 and currentThread==sysDevices[M][item]['threadCount']): #Turning on pumps in forward direction
-        sysDevices[M][item]['active']=1
-        setPWM(M,'Pumps',sysItems[item]['In1'],theValue*float(sysData[M][item]['ON']),0)
-        setPWM(M,'Pumps',sysItems[item]['In2'],0.0*float(sysData[M][item]['ON']),0)
-        sysDevices[M][item]['active']=0
-    elif (sysData[M][item]['target']<0 and currentThread==sysDevices[M][item]['threadCount']): #Or backward direction.
-        sysDevices[M][item]['active']=1
-        setPWM(M,'Pumps',sysItems[item]['In1'],0.0*float(sysData[M][item]['ON']),0)
-        setPWM(M,'Pumps',sysItems[item]['In2'],theValue*float(sysData[M][item]['ON']),0)
-        sysDevices[M][item]['active']=0
-  
-    time.sleep(Ontime)
-    
-    if(abs(sysData[M][item]['target'])!=1 and currentThread==sysDevices[M][item]['threadCount']): #Turning off pumps at appropriate time.
-        sysDevices[M][item]['active']=1
-        setPWM(M,'Pumps',sysItems[item]['In1'],0.0*float(sysData[M][item]['ON']),0)
-        setPWM(M,'Pumps',sysItems[item]['In2'],0.0*float(sysData[M][item]['ON']),0)
-        setPWM(M,'Pumps',sysItems[item]['In1'],0.0*float(sysData[M][item]['ON']),0)
-        setPWM(M,'Pumps',sysItems[item]['In2'],0.0*float(sysData[M][item]['ON']),0)
-        sysDevices[M][item]['active']=0
-    
+
+
+    if abs(1.0 - sysData[M][item]['target']) < 0.001:
+        if (sysData[M][item]['target']>0 and currentThread==sysDevices[M][item]['threadCount']): #Turning on pumps in forward direction
+            sysDevices[M][item]['active']=1
+            setPWM(M,'Pumps',sysItems[item]['In1'],theValue*float(sysData[M][item]['ON']),0)
+            setPWM(M,'Pumps',sysItems[item]['In2'],0.0*float(sysData[M][item]['ON']),0)
+            sysDevices[M][item]['active']=0
+        elif (sysData[M][item]['target']<0 and currentThread==sysDevices[M][item]['threadCount']): #Or backward direction.
+            sysDevices[M][item]['active']=1
+            setPWM(M,'Pumps',sysItems[item]['In1'],0.0*float(sysData[M][item]['ON']),0)
+            setPWM(M,'Pumps',sysItems[item]['In2'],theValue*float(sysData[M][item]['ON']),0)
+            sysDevices[M][item]['active']=0
+
+        time.sleep(Ontime)
+
+        if(abs(sysData[M][item]['target'])!=1 and currentThread==sysDevices[M][item]['threadCount']): #Turning off pumps at appropriate time.
+            sysDevices[M][item]['active']=1
+            setPWM(M,'Pumps',sysItems[item]['In1'],0.0*float(sysData[M][item]['ON']),0)
+            setPWM(M,'Pumps',sysItems[item]['In2'],0.0*float(sysData[M][item]['ON']),0)
+            setPWM(M,'Pumps',sysItems[item]['In1'],0.0*float(sysData[M][item]['ON']),0)
+            setPWM(M,'Pumps',sysItems[item]['In2'],0.0*float(sysData[M][item]['ON']),0)
+            sysDevices[M][item]['active']=0
+    else:
+        num = int(Ontime / periodTime)
+        print(periodTime)
+        cnt = 0
+        while num > cnt:
+            if (sysData[M][item]['target'] > 0 and currentThread == sysDevices[M][item][
+                'threadCount']):  # Turning on pumps in forward direction
+                sysDevices[M][item]['active'] = 1
+                setPWM(M, 'Pumps', sysItems[item]['In1'], theValue * float(sysData[M][item]['ON']), 0)
+                setPWM(M, 'Pumps', sysItems[item]['In2'], 0.0 * float(sysData[M][item]['ON']), 0)
+                sysDevices[M][item]['active'] = 0
+            elif (sysData[M][item]['target'] < 0 and currentThread == sysDevices[M][item][
+                'threadCount']):  # Or backward direction.
+                sysDevices[M][item]['active'] = 1
+                setPWM(M, 'Pumps', sysItems[item]['In1'], 0.0 * float(sysData[M][item]['ON']), 0)
+                setPWM(M, 'Pumps', sysItems[item]['In2'], theValue * float(sysData[M][item]['ON']), 0)
+                sysDevices[M][item]['active'] = 0
+
+            time.sleep(periodTime * abs(sysData[M][item]['target']))
+
+            if (abs(sysData[M][item]['target']) != 1 and currentThread == sysDevices[M][item][
+                'threadCount']):  # Turning off pumps at appropriate time.
+                sysDevices[M][item]['active'] = 1
+                setPWM(M, 'Pumps', sysItems[item]['In1'], 0.0 * float(sysData[M][item]['ON']), 0)
+                setPWM(M, 'Pumps', sysItems[item]['In2'], 0.0 * float(sysData[M][item]['ON']), 0)
+                setPWM(M, 'Pumps', sysItems[item]['In1'], 0.0 * float(sysData[M][item]['ON']), 0)
+                setPWM(M, 'Pumps', sysItems[item]['In2'], 0.0 * float(sysData[M][item]['ON']), 0)
+                sysDevices[M][item]['active'] = 0
+
+            time.sleep(periodTime * (1 - abs(sysData[M][item]['target'])))
+
+            cnt += 1
+
+    print(cnt)
+
     Time2=datetime.now()
     elapsedTime=Time2-Time1
     elapsedTimeSeconds=round(elapsedTime.total_seconds(),2)
