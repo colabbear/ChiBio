@@ -103,7 +103,17 @@
           </div>
           
           <br>
-          
+
+
+     <!-- LED A -->
+
+          <b>CycleTime</b>
+              <br> New:
+              <input id="CycleTimeInput" type="number" size="5" value=0 style="width: 4em"/>
+          <button id="CycleTimeSwitch" >SetCycleTime</button>
+
+          <br><br>
+
           <h3>Experiment</h3>
           
      
@@ -1508,7 +1518,23 @@ function TitleFailure() {
     </script>
     
     
-    
+
+    <script>
+        $(function() {
+            $('#CycleTimeSwitch').click(function(){
+
+              var value = $('#CycleTimeInput').val();
+              var targetURL = '/SetCycleTime/' + value + '/0';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
     
     
     
