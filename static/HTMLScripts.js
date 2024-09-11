@@ -1,4 +1,5 @@
 
+
 function getSysData(){
     
     
@@ -343,7 +344,7 @@ function updateData(data){
         }
         
         
-        if (data.presentDevices.M0 ==0) {
+        if (data.presentDevices.M0 ==0 || data.retryDevices.M0 == 1) {
             document.getElementById("Device0").disabled= Boolean(1)
         
         } else if (data.UIDevice=='M0'){
@@ -357,7 +358,7 @@ function updateData(data){
         
         
         
-        if (data.presentDevices.M1 ==0) {
+        if (data.presentDevices.M1 ==0 || data.retryDevices.M1 == 1) {
             document.getElementById("Device1").disabled= Boolean(1)
         
         } else if (data.UIDevice=='M1'){
@@ -371,7 +372,7 @@ function updateData(data){
         
         
         
-        if (data.presentDevices.M2 ==0) {
+        if (data.presentDevices.M2 ==0 || data.retryDevices.M2 == 1) {
             document.getElementById("Device2").disabled= Boolean(1)
         
         } else if (data.UIDevice=='M2'){
@@ -385,7 +386,7 @@ function updateData(data){
         
         
         
-        if (data.presentDevices.M3 ==0) {
+        if (data.presentDevices.M3 ==0 || data.retryDevices.M3 == 1) {
             document.getElementById("Device3").disabled= Boolean(1)
         
         } else if (data.UIDevice=='M3'){
@@ -399,7 +400,7 @@ function updateData(data){
         
         
         
-        if (data.presentDevices.M4 ==0) {
+        if (data.presentDevices.M4 ==0 || data.retryDevices.M4 == 1) {
             document.getElementById("Device4").disabled= Boolean(1)
         
         } else if (data.UIDevice=='M4'){
@@ -413,7 +414,7 @@ function updateData(data){
         
         
         
-        if (data.presentDevices.M5 ==0) {
+        if (data.presentDevices.M5 ==0 || data.retryDevices.M5 == 1) {
             document.getElementById("Device5").disabled= Boolean(1)
         
         } else if (data.UIDevice=='M5'){
@@ -426,7 +427,7 @@ function updateData(data){
         }
         
         
-        if (data.presentDevices.M6 ==0) {
+        if (data.presentDevices.M6 ==0 || data.retryDevices.M6 == 1) {
             document.getElementById("Device6").disabled= Boolean(1)
         
         } else if (data.UIDevice=='M6'){
@@ -438,7 +439,7 @@ function updateData(data){
             document.getElementById("Device6").setAttribute("style", "")
         }
         
-        if (data.presentDevices.M7 ==0) {
+        if (data.presentDevices.M7 ==0 || data.retryDevices.M7 == 1) {
             document.getElementById("Device7").disabled= Boolean(1)
         
         } else if (data.UIDevice=='M7'){
@@ -449,10 +450,71 @@ function updateData(data){
             document.getElementById("Device7").disabled= Boolean(0)
             document.getElementById("Device7").setAttribute("style", "")
         }
+
+        if (data.retryDevices.M0 == 1) {
+            document.getElementById("Device0_retry").disabled= Boolean(0)
+        }
+        else if (data.retryDevices.M0 == 0) {
+            document.getElementById("Device0_retry").disabled= Boolean(1)
+        }
+
+        if (data.retryDevices.M1 == 1) {
+            document.getElementById("Device1_retry").disabled= Boolean(0)
+        }
+        else if (data.retryDevices.M1 == 0) {
+            document.getElementById("Device1_retry").disabled= Boolean(1)
+        }
+
+        if (data.retryDevices.M2 == 1) {
+            document.getElementById("Device2_retry").disabled= Boolean(0)
+        }
+        else if (data.retryDevices.M2 == 0) {
+            document.getElementById("Device2_retry").disabled= Boolean(1)
+        }
+
+        if (data.retryDevices.M3 == 1) {
+            document.getElementById("Device3_retry").disabled= Boolean(0)
+        }
+        else if (data.retryDevices.M3 == 0) {
+            document.getElementById("Device3_retry").disabled= Boolean(1)
+        }
+
+        if (data.retryDevices.M4 == 1) {
+            document.getElementById("Device4_retry").disabled= Boolean(0)
+        }
+        else if (data.retryDevices.M4 == 0) {
+            document.getElementById("Device4_retry").disabled= Boolean(1)
+        }
+
+        if (data.retryDevices.M5 == 1) {
+            document.getElementById("Device5_retry").disabled= Boolean(0)
+        }
+        else if (data.retryDevices.M5 == 0) {
+            document.getElementById("Device5_retry").disabled= Boolean(1)
+        }
+
+        if (data.retryDevices.M6 == 1) {
+            document.getElementById("Device6_retry").disabled= Boolean(0)
+        }
+        else if (data.retryDevices.M6 == 0) {
+            document.getElementById("Device6_retry").disabled= Boolean(1)
+        }
+
+        if (data.retryDevices.M7 == 1) {
+            document.getElementById("Device7_retry").disabled= Boolean(0)
+        }
+        else if (data.retryDevices.M7 == 0) {
+            document.getElementById("Device7_retry").disabled= Boolean(1)
+        }
         
-        
-        
-        
+        if (data.retryDevices.M0 == 1 || data.retryDevices.M1 == 1 || data.retryDevices.M2 == 1 || data.retryDevices.M3 == 1 || data.retryDevices.M4 == 1 || data.retryDevices.M5 == 1 || data.retryDevices.M7 == 1 || data.retryDevices.M7 == 1) {
+            document.getElementById("ScanDevices").disabled= Boolean(1)
+        }
+        else {
+            document.getElementById("ScanDevices").disabled= Boolean(0)
+        }
+
+
         
         var TurbidostatOn = Boolean(data.OD.ON); //True if we are regulating OD
 
@@ -548,7 +610,14 @@ function updateData(data){
 		  
 
         }
-        
+
+        if (data.threading.retry.ON == 1) {
+            document.getElementById('btn_fieldset1').disabled = true;
+            document.getElementById('btn_fieldset2').disabled = true;
+            document.getElementById('btn_fieldset3').disabled = true;
+            document.getElementById('btn_fieldset4').disabled = true;
+            document.getElementById('btn_fieldset5').disabled = true;
+        }
 
 }
 
