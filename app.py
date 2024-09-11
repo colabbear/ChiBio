@@ -18,6 +18,16 @@ import simplejson
 import copy
 import csv
 import smbus2 as smbus
+from time import perf_counter_ns
+
+class timeEx:
+    @staticmethod
+    def sleep(delay):
+        current = time.perf_counter_ns()
+        end = current + delay * 1000000000
+        while current < end:
+            current = time.perf_counter_ns()
+            time.sleep(0)
 
 
 application = Flask(__name__)
@@ -28,7 +38,7 @@ lock=Lock()
 #Initialise data structures.
 
 theValue = 1.0
-periodTime = 0.5 # seconds
+periodTime = 5 # seconds
 
 
 #Sysdata is a structure created for each device and contains the setup / measured data related to that device during an experiment. All of this information is passed into the user interface during an experiment.
@@ -727,7 +737,7 @@ def PumpModulation(M,item):
     #    waittime=cycletime*abs(sysData[M]['Pump2']['target']) #We want to wait until the output pump has stopped, otherwise you are very inefficient with your media since it will be pumping out the fresh media fromthe top of the test tube right when it enters.
     #    time.sleep(waittime+1.0)  
 
-
+    cnt = 0
     if abs(1.0 - sysData[M][item]['target']) < 0.001:
         if (sysData[M][item]['target']>0 and currentThread==sysDevices[M][item]['threadCount']): #Turning on pumps in forward direction
             sysDevices[M][item]['active']=1
@@ -752,7 +762,6 @@ def PumpModulation(M,item):
     else:
         num = int(Ontime / periodTime)
         print(periodTime)
-        cnt = 0
         while num > cnt:
             if (sysData[M][item]['target'] > 0 and currentThread == sysDevices[M][item][
                 'threadCount']):  # Turning on pumps in forward direction
@@ -767,7 +776,10 @@ def PumpModulation(M,item):
                 setPWM(M, 'Pumps', sysItems[item]['In2'], theValue * float(sysData[M][item]['ON']), 0)
                 sysDevices[M][item]['active'] = 0
 
-            time.sleep(periodTime * abs(sysData[M][item]['target']))
+            timeEx.sleep(periodTime * float(abs(sysData[M][item]['target'])))
+            # target_time = time.clock() + periodTime * abs(sysData[M][item]['target'])
+            # while time.clock() < target_time:
+            #     pass
 
             if (abs(sysData[M][item]['target']) != 1 and currentThread == sysDevices[M][item][
                 'threadCount']):  # Turning off pumps at appropriate time.
@@ -1268,17 +1280,15 @@ def CustomProgram(M):
             SetOutputOn(M,'UV',0) #Deactivate UV
 
     elif (program=="C7"):
-        pumpTime = 3600
+        # pass
         # UVTime = 10
         # SetOutputOn(M, 'UV', 1)
         # time.sleep(UVTime)
         # SetOutputOn(M, 'UV', 0)
-        SetOutputOn(M, 'Pump3', 1)
-        SetOutputOn(M, 'Pump4', 1)
-        time.sleep(pumpTime)
-        SetOutputOn(M, 'Pump3', 0)
-        SetOutputOn(M, 'Pump4', 0)
-                
+        # SetOutputOn(M, 'Pump3', 1)
+        # SetOutputOn(M, 'Pump4', 1)
+        SetOutputOn(M, 'LEDD', 1)
+
                 
     
     return
