@@ -2567,7 +2567,7 @@ def runExperiment(M,placeholder):
                 return
             else:
                 print("except")
-                return
+                # return
         sysData[M]['threading']['wait']['ON'] = 0
 
     LightActuation(M,0) #Turn light actuation off if it is running.
