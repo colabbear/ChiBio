@@ -2,6 +2,7 @@
 
 #Import required python packages
 import os
+import io
 import random
 import time
 import math
@@ -21,6 +22,8 @@ import smbus2 as smbus
 from time import perf_counter_ns
 import requests
 import json
+import matplotlib.pyplot as plt
+from discord_webhook import DiscordWebhook, DiscordEmbed
 
 class timeEx:
     @staticmethod
@@ -48,64 +51,125 @@ def send_message(msg):
 
     print(message)            
 
-def send_data(M):
+# def send_data(M):
+#     global sysData
+#     M = str(M)
+
+#     fieldnames = ['exp_time', 'od_measured', 'od_setpoint', 'od_zero_setpoint', 'thermostat_setpoint', 'heating_rate',
+#                   'internal_air_temp', 'external_air_temp', 'media_temp', 'opt_gen_act_int', 'pump_1_rate',
+#                   'pump_2_rate',
+#                   'pump_3_rate', 'pump_4_rate', 'media_vol', 'stirring_rate', 'LED_395nm_setpoint',
+#                   'LED_457nm_setpoint',
+#                   'LED_500nm_setpoint', 'LED_523nm_setpoint', 'LED_595nm_setpoint', 'LED_623nm_setpoint',
+#                   'LED_6500K_setpoint', 'laser_setpoint', 'LED_UV_int', 'FP1_base', 'FP1_emit1', 'FP1_emit2',
+#                   'FP2_base',
+#                   'FP2_emit1', 'FP2_emit2', 'FP3_base', 'FP3_emit1', 'FP3_emit2', 'custom_prog_param1',
+#                   'custom_prog_param2',
+#                   'custom_prog_param3', 'custom_prog_status', 'zigzag_target', 'growth_rate']
+
+#     row = [sysData[M]['time']['record'][-1],
+#           sysData[M]['OD']['record'][-1],
+#           sysData[M]['OD']['targetrecord'][-1],
+#           sysData[M]['OD0']['target'],
+#           sysData[M]['Thermostat']['record'][-1],
+#           sysData[M]['Heat']['target'] * float(sysData[M]['Heat']['ON']),
+#           sysData[M]['ThermometerInternal']['record'][-1],
+#           sysData[M]['ThermometerExternal']['record'][-1],
+#           sysData[M]['ThermometerIR']['record'][-1],
+#           sysData[M]['Light']['record'][-1],
+#           sysData[M]['Pump1']['record'][-1],
+#           sysData[M]['Pump2']['record'][-1],
+#           sysData[M]['Pump3']['record'][-1],
+#           sysData[M]['Pump4']['record'][-1],
+#           sysData[M]['Volume']['target'],
+#           sysData[M]['Stir']['target'] * sysData[M]['Stir']['ON'], ]
+#     for LED in ['LEDA', 'LEDB', 'LEDC', 'LEDD', 'LEDE', 'LEDF', 'LEDG', 'LASER650']:
+#         row = row + [sysData[M][LED]['target']]
+#     row = row + [sysData[M]['UV']['target'] * sysData[M]['UV']['ON']]
+#     for FP in ['FP1', 'FP2', 'FP3']:
+#         if sysData[M][FP]['ON'] == 1:
+#             row = row + [sysData[M][FP]['Base']]
+#             row = row + [sysData[M][FP]['Emit1']]
+#             row = row + [sysData[M][FP]['Emit2']]
+#         else:
+#             row = row + ([0.0, 0.0, 0.0])
+
+#     row = row + [sysData[M]['Custom']['param1'] * float(sysData[M]['Custom']['ON'])]
+#     row = row + [sysData[M]['Custom']['param2'] * float(sysData[M]['Custom']['ON'])]
+#     row = row + [sysData[M]['Custom']['param3'] * float(sysData[M]['Custom']['ON'])]
+#     row = row + [sysData[M]['Custom']['Status'] * float(sysData[M]['Custom']['ON'])]
+#     row = row + [sysData[M]['Zigzag']['target'] * float(sysData[M]['Zigzag']['ON'])]
+#     row = row + [sysData[M]['GrowthRate']['current'] * sysData[M]['Zigzag']['ON']]
+
+#     data = {}
+#     if (len(row) == len(fieldnames)):
+#         data = dict(zip(fieldnames, row))
+#     else:
+#         print('send_data: mismatch between column num and header num')
+
+#     data = json.dumps(data, ensure_ascii=False, indent=4)
+#     send_message(M + ": " + data)
+    
+#     return 0
+    
+def send_ExperimentDataImage(M):
     global sysData
     M = str(M)
+    
+    now = datetime.now()
+    
+    webhook = DiscordWebhook(url=DISCORD_WEBHOOK_URL)
 
-    fieldnames = ['exp_time', 'od_measured', 'od_setpoint', 'od_zero_setpoint', 'thermostat_setpoint', 'heating_rate',
-                  'internal_air_temp', 'external_air_temp', 'media_temp', 'opt_gen_act_int', 'pump_1_rate',
-                  'pump_2_rate',
-                  'pump_3_rate', 'pump_4_rate', 'media_vol', 'stirring_rate', 'LED_395nm_setpoint',
-                  'LED_457nm_setpoint',
-                  'LED_500nm_setpoint', 'LED_523nm_setpoint', 'LED_595nm_setpoint', 'LED_623nm_setpoint',
-                  'LED_6500K_setpoint', 'laser_setpoint', 'LED_UV_int', 'FP1_base', 'FP1_emit1', 'FP1_emit2',
-                  'FP2_base',
-                  'FP2_emit1', 'FP2_emit2', 'FP3_base', 'FP3_emit1', 'FP3_emit2', 'custom_prog_param1',
-                  'custom_prog_param2',
-                  'custom_prog_param3', 'custom_prog_status', 'zigzag_target', 'growth_rate']
-
-    row = [sysData[M]['time']['record'][-1],
-           sysData[M]['OD']['record'][-1],
-           sysData[M]['OD']['targetrecord'][-1],
-           sysData[M]['OD0']['target'],
-           sysData[M]['Thermostat']['record'][-1],
-           sysData[M]['Heat']['target'] * float(sysData[M]['Heat']['ON']),
-           sysData[M]['ThermometerInternal']['record'][-1],
-           sysData[M]['ThermometerExternal']['record'][-1],
-           sysData[M]['ThermometerIR']['record'][-1],
-           sysData[M]['Light']['record'][-1],
-           sysData[M]['Pump1']['record'][-1],
-           sysData[M]['Pump2']['record'][-1],
-           sysData[M]['Pump3']['record'][-1],
-           sysData[M]['Pump4']['record'][-1],
-           sysData[M]['Volume']['target'],
-           sysData[M]['Stir']['target'] * sysData[M]['Stir']['ON'], ]
-    for LED in ['LEDA', 'LEDB', 'LEDC', 'LEDD', 'LEDE', 'LEDF', 'LEDG', 'LASER650']:
-        row = row + [sysData[M][LED]['target']]
-    row = row + [sysData[M]['UV']['target'] * sysData[M]['UV']['ON']]
-    for FP in ['FP1', 'FP2', 'FP3']:
-        if sysData[M][FP]['ON'] == 1:
-            row = row + [sysData[M][FP]['Base']]
-            row = row + [sysData[M][FP]['Emit1']]
-            row = row + [sysData[M][FP]['Emit2']]
-        else:
-            row = row + ([0.0, 0.0, 0.0])
-
-    row = row + [sysData[M]['Custom']['param1'] * float(sysData[M]['Custom']['ON'])]
-    row = row + [sysData[M]['Custom']['param2'] * float(sysData[M]['Custom']['ON'])]
-    row = row + [sysData[M]['Custom']['param3'] * float(sysData[M]['Custom']['ON'])]
-    row = row + [sysData[M]['Custom']['Status'] * float(sysData[M]['Custom']['ON'])]
-    row = row + [sysData[M]['Zigzag']['target'] * float(sysData[M]['Zigzag']['ON'])]
-    row = row + [sysData[M]['GrowthRate']['current'] * sysData[M]['Zigzag']['ON']]
-
-    data = {}
-    if (len(row) == len(fieldnames)):
-        data = dict(zip(fieldnames, row))
-    else:
-        print('send_data: mismatch between column num and header num')
-
-    data = json.dumps(data, ensure_ascii=False, indent=4)
-    send_message(M + ": " + data)
+    exp_endTime = max(sysData[M]['time']['record'])
+    time_h = [i * 3600 for i in range(int(exp_endTime) // 3600 + 1)]
+    time_h_label = [str(i) for i in range(int(exp_endTime) // 3600 + 1)]
+    
+    fig, axes = plt.subplots(2, 3, figsize=(16/3, 9/3))
+    fig.subplots_adjust(hspace=0.5,wspace=0.5)
+    
+    axes[0, 0].plot(sysData[M]['time']['record'], sysData[M]['OD']['record'])
+    axes[0, 0].set_title("OD")
+    
+    axes[0, 1].plot(sysData[M]['time']['record'], sysData[M]['Thermostat']['record'], label="Target")
+    axes[0, 1].plot(sysData[M]['time']['record'], sysData[M]['ThermometerInternal']['record'], label="Internal Air")
+    axes[0, 1].plot(sysData[M]['time']['record'], sysData[M]['ThermometerExternal']['record'], label="External Air")
+    axes[0, 1].plot(sysData[M]['time']['record'], sysData[M]['ThermometerIR']['record'], label="Temperature")
+    axes[0, 1].set_title("Thermometry")
+    axes[0, 1].legend(loc='upper left', fontsize=3)
+    
+    axes[0, 2].plot(sysData[M]['time']['record'], sysData[M]['Pump1']['record'])
+    axes[0, 2].set_title("Pumping")
+    
+    axes[1, 0].plot(sysData[M]['time']['record'], sysData[M]['FP1']['Emit1Record'], label="Emission Band 1")
+    axes[1, 0].plot(sysData[M]['time']['record'], sysData[M]['FP1']['Emit2Record'], label="Emission Band 2")
+    axes[1, 0].set_title("FP 1")
+    axes[1, 0].legend(loc='upper left', fontsize=3)
+    
+    axes[1, 1].plot(sysData[M]['time']['record'], sysData[M]['FP2']['Emit1Record'], label="Emission Band 1")
+    axes[1, 1].plot(sysData[M]['time']['record'], sysData[M]['FP2']['Emit2Record'], label="Emission Band 2")
+    axes[1, 1].set_title("FP 2")
+    axes[1, 1].legend(loc='upper left', fontsize=3)
+    
+    axes[1, 2].plot(sysData[M]['time']['record'], sysData[M]['FP3']['Emit1Record'], label="Emission Band 1")
+    axes[1, 2].plot(sysData[M]['time']['record'], sysData[M]['FP3']['Emit2Record'], label="Emission Band 2")
+    axes[1, 2].set_title("FP 3")
+    axes[1, 2].legend(loc='upper left', fontsize=3)
+    
+    img_buf = io.BytesIO()
+    plt.savefig(img_buf, dpi=150, bbox_inches='tight', format='png')
+    webhook.add_file(file=img_buf.getvalue(), filename="Experiment_Plot.png")
+    plt.close()
+    img_buf.close()
+    
+    str(sysData[M]['Experiment']['cycles'])
+    
+    embed = DiscordEmbed(title=M + " Cycle " + str(sysData[M]['Experiment']['cycles']),
+                            description=f"[{now.strftime('%Y-%m-%d %H:%M:%S')}]",
+                            color="03b2f8")
+    embed.set_thumbnail(url="attachment://Experiment_Plot.png")
+    
+    webhook.add_embed(embed)
+    response = webhook.execute()
     
     return 0
 
@@ -2393,7 +2457,8 @@ def runExperiment(M,placeholder):
 
     #### Writing Results to data files
     csvData(M) #This command writes system data to a CSV file for future keeping.
-    send_data(M)
+    # send_data(M)
+    send_ExperimentDataImage(M)
     #And intermittently write the setup parameters to a data file. 
     if(sysData[M]['Experiment']['cycles']%10==1): #We only write whole configuration file each 10 cycles since it is not really that important. 
         TempStartTime=sysData[M]['Experiment']['startTimeRaw']
