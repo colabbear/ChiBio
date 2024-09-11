@@ -170,7 +170,8 @@ def send_ExperimentDataImage(M):
     embed = DiscordEmbed(title=M + " Cycle " + str(sysData[M]['Experiment']['cycles']),
                             description=f"[{now.strftime('%Y-%m-%d %H:%M:%S')}]",
                             color="03b2f8")
-    embed.set_thumbnail(url="attachment://Experiment_Plot.png")
+    # embed.set_thumbnail(url="attachment://Experiment_Plot.png")
+    embed.set_image(url="attachment://Experiment_Plot.png")
     
     webhook.add_embed(embed)
     response = webhook.execute()
