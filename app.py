@@ -184,7 +184,10 @@ application = Flask(__name__)
 application.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 #Try this https://stackoverflow.com/questions/23112316/using-flask-how-do-i-modify-the-cache-control-header-for-all-output/23115561#23115561
 
 lock=Lock()
-        
+condition = {}
+for i in ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7']:
+    condition[i] = threading.Condition()
+
 #Initialise data structures.
 
 theValue = 1.0
@@ -199,6 +202,7 @@ sysData = {'M0' : {
    'presentDevices' : { 'M0' : 0,'M1' : 0,'M2' : 0,'M3' : 0,'M4' : 0,'M5' : 0,'M6' : 0,'M7' : 0},
    'Version' : {'value' : 'Turbidostat V3.0'},
    'DeviceID' : '',
+   'threading' : {'wait' : {'ON' : 0}},
    'time' : {'record' : []},
    'LEDA' : {'WL' : '395', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
    'LEDB' : {'WL' : '457', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
@@ -370,6 +374,8 @@ def initialise(M):
     global sysData;
     global sysItems;
     global sysDevices
+
+    sysData[M]['threading']['wait']['ON'] = 0
 
     for LED in ['LEDA','LEDB','LEDC','LEDD','LEDE','LEDF','LEDG']:
         sysData[M][LED]['target']=sysData[M][LED]['default']
@@ -1571,6 +1577,7 @@ def I2CCom(M,device,rw,hl,data1,data2,SMBUSFLAG):
         sysItems['Watchdog']['ON']=0 #Basically this will crash all the electronics and the software. 
         out=0
         tries=-1
+        send_message("Chi.Bio Operating System Shutdown")
         os._exit(4)
     
     #cID=str(M)+str(device)+'d'+str(data1)+'d'+str(data2)  # This is an ID string for the communication that we are trying to send - not used at present
@@ -1613,6 +1620,7 @@ def I2CCom(M,device,rw,hl,data1,data2,SMBUSFLAG):
             out=0
             print(str(datetime.now()) + 'Failed to communicate to Multiplexer 20 times. Disabling hardware and software!')
             tries=-1
+            send_message("Chi.Bio Operating System Shutdown")
             os._exit(4)
     
     
@@ -1662,6 +1670,7 @@ def I2CCom(M,device,rw,hl,data1,data2,SMBUSFLAG):
             sysData[M]['present']=0
             print(str(datetime.now()) + 'Failed to communicate to a device 10 times. Disabling hardware and software!')
             tries=-1
+            send_message("Chi.Bio Operating System Shutdown")
             os._exit(4)
                 
     time.sleep(0.0005)
@@ -1940,6 +1949,7 @@ def setPWM(M,device,channels,fraction,ConsecutiveFails):
             if ConsecutiveFails>10:
                 sysItems['Watchdog']['ON']=0 #Basically this will crash all the electronics and the software. 
                 print(str(datetime.now()) + 'Failed to communicate to PWM 10 times. Disabling hardware and software!')
+                send_message("Chi.Bio Operating System Shutdown")
                 os._exit(4)
             else:
                 time.sleep(0.1)
@@ -2339,6 +2349,11 @@ def ExperimentStartStop(M,value):
         SetOutputOn(M,'Pump4',0)
         SetOutputOn(M,'Stir',0)
         SetOutputOn(M,'Thermostat',0)
+
+        if sysData[M]['threading']['wait']['ON'] == 1:
+            sysData[M]['threading']['wait']['ON'] = 0
+            with condition[M]:
+                condition[M].notify_all()
         
     return ('', 204)
     
@@ -2490,12 +2505,24 @@ def runExperiment(M,placeholder):
         sleeptime=0
         addTerminal(M,'Experiment Cycle Time is too short!!!')    
 
-    print(sleeptime)        
-    time.sleep(sleeptime)
+    print(sleeptime)
+    with condition[M]:
+        sysData[M]['threading']['wait']['ON'] = 1
+        condition[M].wait(sleeptime*float(sysData[M]['threading']['wait']['ON']))
+        if sysData[M]['threading']['wait']['ON'] == 0:
+            if sysData[M]['Experiment']['ON']==0:
+                turnEverythingOff(M)
+                addTerminal(M, 'Experiment Cycle Early End And Experiment Stopped')
+                return
+            else:
+                print("except")
+                return
+        sysData[M]['threading']['wait']['ON'] = 0
+
     LightActuation(M,0) #Turn light actuation off if it is running.
     addTerminal(M,'Cycle ' + str(sysData[M]['Experiment']['cycles']) + ' Complete')
 
-    print("total experiment time : ", sysData[M]['Experiment']['cycles'] * sysData[M]['Experiment']['cycleTime'])
+    # print("total experiment time : ", sysData[M]['Experiment']['cycles'] * sysData[M]['Experiment']['cycleTime'])
 
     #Now we run this function again if the automated experiment is still going.
     if sysData[M]['Experiment']['cycles'] * sysData[M]['Experiment']['cycleTime'] >= sysData[M]['Experiment']['totalExperimentTime']*3600:
