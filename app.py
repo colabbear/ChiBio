@@ -202,7 +202,8 @@ sysData = {'M0' : {
    'presentDevices' : { 'M0' : 0,'M1' : 0,'M2' : 0,'M3' : 0,'M4' : 0,'M5' : 0,'M6' : 0,'M7' : 0},
    'Version' : {'value' : 'Turbidostat V3.0'},
    'DeviceID' : '',
-   'threading' : {'wait' : {'ON' : 0}},
+   'threading' : {'wait' : {'ON' : 0}, 'retry' : {'ON' : 0}},
+   'retryDevices' : { 'M0' : 0,'M1' : 0,'M2' : 0,'M3' : 0,'M4' : 0,'M5' : 0,'M6' : 0,'M7' : 0},
    'time' : {'record' : []},
    'LEDA' : {'WL' : '395', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
    'LEDB' : {'WL' : '457', 'default': 0.1, 'target' : 0.0, 'max': 1.0, 'min' : 0.0,'ON' : 0},
@@ -375,7 +376,8 @@ def initialise(M):
     global sysItems;
     global sysDevices
 
-    sysData[M]['threading']['wait']['ON'] = 0
+    # sysData[M]['threading']['wait']['ON'] = 0
+    # sysData[M]['threading']['retry']['ON'] = 0
 
     for LED in ['LEDA','LEDB','LEDC','LEDD','LEDE','LEDF','LEDG']:
         sysData[M][LED]['target']=sysData[M][LED]['default']
@@ -1616,13 +1618,39 @@ def I2CCom(M,device,rw,hl,data1,data2,SMBUSFLAG):
                 print(str(datetime.now()) + 'Did multiplexer hard-reset on ' + str(M))
                 
         if tries>20: #If it has failed a number of times then likely something is seriously wrong, so we crash the software.
-            sysItems['Watchdog']['ON']=0 #Basically this will crash all the electronics and the software. 
+            # sysItems['Watchdog']['ON']=0 #Basically this will crash all the electronics and the software.
             out=0
             print(str(datetime.now()) + 'Failed to communicate to Multiplexer 20 times. Disabling hardware and software!')
-            tries=-1
-            send_message("Chi.Bio Operating System Shutdown")
-            os._exit(4)
-    
+            # tries=-1
+
+            addTerminal(M, "The device sleep due to error that failed to communicate to Multiplexer 20 times")
+            send_message(M + " sleep due to error that failed to communicate to Multiplexer 20 times")
+            lock.release()
+            with condition[M]:
+                sysData[M]['threading']['wait']['ON'] = 1
+                sysData[M]['threading']['retry']['ON'] = 1
+                for Mb in ['M0','M1','M2','M3','M4','M5','M6','M7']:
+                    if sysData[Mb]['present']==1:
+                        sysData[Mb]['retryDevices'][M] = 1
+                condition[M].wait(3600 * float(sysData[M]['threading']['wait']['ON']))
+                sysData[M]['threading']['wait']['ON'] = 0
+
+                lock.acquire()
+                tries = 0
+                addTerminal(M, "The device try connecting the multiplexer to the appropriate device " +
+                               "to allow digital communications")
+                send_message(M + " try connecting the multiplexer to the appropriate device to allow digital communications")
+                time.sleep(0.02)
+
+            # os._exit(4)
+
+    if sysData[M]['threading']['retry']['ON'] == 1:
+        sysData[M]['threading']['retry']['ON'] = 0
+        for Mb in ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7']:
+            if sysData[Mb]['present'] == 1:
+                sysData[Mb]['retryDevices'][M] = 0
+        addTerminal(M, "The device succeed in connecting the multiplexer to the appropriate device to allow digital communications")
+        send_message(M + " succeed in connecting the multiplexer to the appropriate device to allow digital communications")
     
 
     
@@ -2253,6 +2281,9 @@ def Zigzag(M):
 
 @application.route("/SetCycleTime/<cycleTime>/<M>",methods=['POST'])
 def SetCycleTime(M, cycleTime):
+    global sysData
+    global sysItems
+
     M = str(M)
     if (M=="0"):
         M=sysItems['UIDevice']
@@ -2264,7 +2295,9 @@ def SetCycleTime(M, cycleTime):
 
 @application.route("/SetTheValue/<inputValue>/<M>", methods=['POST'])
 def SetTheValue(M, inputValue):
+    global sysItems
     global theValue
+
     M = str(M)
     if (M == "0"):
         M = sysItems['UIDevice']
@@ -2282,6 +2315,7 @@ def SetTheValue(M, inputValue):
 @application.route("/SetTotalExperimentTime/<inputValue>/<M>", methods=['POST'])
 def SetTotalExperimentTime(M, inputValue):
     global sysData
+    global sysItems
     
     M = str(M)
     if (M == "0"):
@@ -2294,6 +2328,23 @@ def SetTotalExperimentTime(M, inputValue):
     print(M + " Current Total Experiment Time (hours) : " + str(float(sysData[M]['Experiment']['totalExperimentTime'])))
 
     return ('', 204)
+
+@application.route("/RetryConnectingMultiplexer/<M>", methods=['POST'])
+def RetryConnectingMultiplexer(M):
+    global sysData
+    global sysItems
+
+    M = str(M)
+    if (M == "0"):
+        M = sysItems['UIDevice']
+
+    if sysData[M]['threading']['wait']['ON'] == 1:
+        sysData[M]['threading']['wait']['ON'] = 0
+        with condition[M]:
+            condition[M].notify_all()
+
+    return ('', 204)
+
 
 
 

@@ -97,7 +97,45 @@
        <div style="line-height:25%;">
         <br>
       </div>
-      
+
+      <div id="TName2">Retry Connecting Multiplexer</div>
+       <div class="row no-gutters">
+
+            <div class="col align-self-center"></div>
+
+            <div class="col-1 align-self-center">
+             <button id="Device0_retry">M0</button> <br>
+          </div>
+          <div class="col-1 align-self-center">
+             <button id="Device1_retry">M1</button> <br>
+            </div>
+          <div class="col-1 align-self-center">
+             <button id="Device2_retry">M2</button> <br>
+          </div>
+          <div class="col-1 align-self-center">
+             <button id="Device3_retry">M3</button> <br>
+          </div>
+           <div class="col-1 align-self-center">
+             <button id="Device4_retry">M4</button> <br>
+          </div>
+           <div class="col-1 align-self-center">
+             <button id="Device5_retry">M5</button> <br>
+          </div>
+           <div class="col-1 align-self-center">
+             <button id="Device6_retry">M6</button> <br>
+          </div>
+           <div class="col-1 align-self-center">
+             <button id="Device7_retry">M7</button> <br>
+          </div>
+          <div class="col align-self-center"></div>
+      </div>
+       <div style="line-height:25%;">
+        <br>
+      </div>
+
+
+      <fieldset id='btn_fieldset1'>
+
       <div  align='center'>
           <button id="ScanDevices">Scan Devices</button>
           </div>
@@ -130,6 +168,13 @@
           <button id="TotalExperimentTimeSwitch" >SetTotalExperimentTime</button>
 
           <br><br>
+
+
+<!--          <b>Retry Connecting Multiplexer</b>-->
+<!--          <button id="RetryConnectingMultiplexerSwitch" >Switch</button>-->
+
+<!--          <br><br>-->
+
 
           <h3>Experiment</h3>
           
@@ -253,21 +298,15 @@
       </div>
       </div>
       
-  <br>
-  
-  
-  
-  
-  
-  
-  
-  
-      
-  </div>    
-  
-  
+    <br>
+
+  </fieldset>
+
+  </div>
+
   
   <div class="col-3" align='center'>
+     <fieldset id='btn_fieldset2'>
      <h3>Light Outputs</h3>
      
      <!-- LED A -->
@@ -550,14 +589,15 @@
       </div>
       </div>
       
-      
+      </fieldset>
 
   </div>
   
   
   
   <div class="col-3" align='center'>
-     <h3>Spectrometer</h3> 
+     <fieldset id='btn_fieldset3'>
+     <h3>Spectrometer</h3>
       <b>Full Spectral Measurement:</b><br>
      <button id="GetSpectrum">Measure</button>&nbsp &nbsp Gain:
              <select id="SpectrumGain">
@@ -699,7 +739,9 @@
       
       
       </div>
-      
+
+      </fieldset>
+
   </div>
   
   
@@ -714,6 +756,7 @@
       
       
   <div class="col-3" align='center'>
+     <fieldset id='btn_fieldset4'>
      <h3>Stir/Pump</h3> 
      
      
@@ -954,12 +997,14 @@
       </div>
       
       
-      
+      </fieldset>
      
   </div>
+
 </div>
 
 
+<fieldset id='btn_fieldset5'>
  
 <hr>
 
@@ -1436,7 +1481,7 @@
 <br><br>
 
 
-
+</fieldset>
 
 
 
@@ -1591,8 +1636,156 @@ function TitleFailure() {
         });
     </script>
 
-    
-    
+
+
+<!--    <script>-->
+<!--        $(function() {-->
+<!--            $('#RetryConnectingMultiplexerSwitch').click(function(){-->
+
+<!--              var targetURL = '/RetryConnectingMultiplexer' + '/0';-->
+<!--               $.ajax({-->
+<!--                   type:'POST',-->
+<!--                   url: targetURL,-->
+<!--                   success:function(response){-->
+<!--                   getSysData();-->
+<!--                 }-->
+<!--             });-->
+<!--             })-->
+<!--        });-->
+<!--    </script>-->
+
+
+
+    <script>
+        $(function() {
+            $('#Device0_retry').click(function(){
+
+              var targetURL = '/RetryConnectingMultiplexer' + '/M0';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
+    <script>
+        $(function() {
+            $('#Device1_retry').click(function(){
+
+              var targetURL = '/RetryConnectingMultiplexer' + '/M1';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
+    <script>
+        $(function() {
+            $('#Device2_retry').click(function(){
+
+              var targetURL = '/RetryConnectingMultiplexer' + '/M2';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
+    <script>
+        $(function() {
+            $('#Device3_retry').click(function(){
+
+              var targetURL = '/RetryConnectingMultiplexer' + '/M3';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
+    <script>
+        $(function() {
+            $('#Device4_retry').click(function(){
+
+              var targetURL = '/RetryConnectingMultiplexer' + '/M4';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
+    <script>
+        $(function() {
+            $('#Device5_retry').click(function(){
+
+              var targetURL = '/RetryConnectingMultiplexer' + '/M5';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
+    <script>
+        $(function() {
+            $('#Device6_retry').click(function(){
+
+              var targetURL = '/RetryConnectingMultiplexer' + '/M6';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
+    <script>
+        $(function() {
+            $('#Device7_retry').click(function(){
+
+              var targetURL = '/RetryConnectingMultiplexer' + '/M7';
+               $.ajax({
+                   type:'POST',
+                   url: targetURL,
+                   success:function(response){
+                   getSysData();
+                 }
+             });
+             })
+        });
+    </script>
+
+
+
     <script>
         $(function() {
             $('#LEDASet').click(function(){
