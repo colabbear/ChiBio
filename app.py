@@ -39,6 +39,7 @@ lock=Lock()
 
 theValue = 1.0
 periodTime = 5 # seconds
+totalExperimentTime = 36 # hours
 
 
 #Sysdata is a structure created for each device and contains the setup / measured data related to that device during an experiment. All of this information is passed into the user interface during an experiment.
@@ -2118,6 +2119,21 @@ def SetTheValue(M, inputValue):
 
     return ('', 204)
 
+@application.route("/SetTotalExperimentTime/<inputValue>/<M>", methods=['POST'])
+def SetTotalExperimentTime(M, inputValue):
+    global sysData
+    global totalExperimentTime
+    M = str(M)
+    if (M == "0"):
+        M = sysItems['UIDevice']
+
+    totalExperimentTime = float(inputValue)
+    if totalExperimentTime*3600 <= sysData[M]['Experiment']['cycleTime']:
+        totalExperimentTime = 1.25*(sysData[M]['Experiment']['cycleTime'] / 3600.0)
+
+    print("Current Total Experiment Time (hours) : " + str(float(totalExperimentTime)))
+
+    return ('', 204)
 
 
 
@@ -2325,8 +2341,14 @@ def runExperiment(M,placeholder):
     LightActuation(M,0) #Turn light actuation off if it is running.
     addTerminal(M,'Cycle ' + str(sysData[M]['Experiment']['cycles']) + ' Complete')
 
+    print("total experiment time : ", sysData[M]['Experiment']['cycles'] * sysData[M]['Experiment']['cycleTime'])
+
     #Now we run this function again if the automated experiment is still going.
-    if (sysData[M]['Experiment']['ON'] and sysData[M]['Experiment']['threadCount']==currentThread):
+    if sysData[M]['Experiment']['cycles'] * sysData[M]['Experiment']['cycleTime'] >= totalExperimentTime*3600:
+        turnEverythingOff(M)
+        addTerminal(M,'Experiment End')
+
+    elif (sysData[M]['Experiment']['ON'] and sysData[M]['Experiment']['threadCount']==currentThread):
         sysDevices[M]['Experiment']=Thread(target = runExperiment, args=(M,'placeholder'))
         sysDevices[M]['Experiment'].setDaemon(True)
         sysDevices[M]['Experiment'].start();
