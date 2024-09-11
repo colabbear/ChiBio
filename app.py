@@ -20,6 +20,7 @@ import csv
 import smbus2 as smbus
 from time import perf_counter_ns
 import requests
+import json
 
 class timeEx:
     @staticmethod
@@ -38,8 +39,75 @@ def send_message(msg):
     """discord message"""
     now = datetime.now()
     message = {"content": f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] {str(msg)}"}
-    requests.post(DISCORD_WEBHOOK_URL, data=message)
+    try:
+        requests.post(DISCORD_WEBHOOK_URL, data=message, timeout=5)
+    except requests.Timeout:
+        print("Timeout")
+    except requests.ConnectionError:
+        print("Connection Error")
+
     print(message)            
+
+def send_data(M):
+    global sysData
+    M = str(M)
+
+    fieldnames = ['exp_time', 'od_measured', 'od_setpoint', 'od_zero_setpoint', 'thermostat_setpoint', 'heating_rate',
+                  'internal_air_temp', 'external_air_temp', 'media_temp', 'opt_gen_act_int', 'pump_1_rate',
+                  'pump_2_rate',
+                  'pump_3_rate', 'pump_4_rate', 'media_vol', 'stirring_rate', 'LED_395nm_setpoint',
+                  'LED_457nm_setpoint',
+                  'LED_500nm_setpoint', 'LED_523nm_setpoint', 'LED_595nm_setpoint', 'LED_623nm_setpoint',
+                  'LED_6500K_setpoint', 'laser_setpoint', 'LED_UV_int', 'FP1_base', 'FP1_emit1', 'FP1_emit2',
+                  'FP2_base',
+                  'FP2_emit1', 'FP2_emit2', 'FP3_base', 'FP3_emit1', 'FP3_emit2', 'custom_prog_param1',
+                  'custom_prog_param2',
+                  'custom_prog_param3', 'custom_prog_status', 'zigzag_target', 'growth_rate']
+
+    row = [sysData[M]['time']['record'][-1],
+           sysData[M]['OD']['record'][-1],
+           sysData[M]['OD']['targetrecord'][-1],
+           sysData[M]['OD0']['target'],
+           sysData[M]['Thermostat']['record'][-1],
+           sysData[M]['Heat']['target'] * float(sysData[M]['Heat']['ON']),
+           sysData[M]['ThermometerInternal']['record'][-1],
+           sysData[M]['ThermometerExternal']['record'][-1],
+           sysData[M]['ThermometerIR']['record'][-1],
+           sysData[M]['Light']['record'][-1],
+           sysData[M]['Pump1']['record'][-1],
+           sysData[M]['Pump2']['record'][-1],
+           sysData[M]['Pump3']['record'][-1],
+           sysData[M]['Pump4']['record'][-1],
+           sysData[M]['Volume']['target'],
+           sysData[M]['Stir']['target'] * sysData[M]['Stir']['ON'], ]
+    for LED in ['LEDA', 'LEDB', 'LEDC', 'LEDD', 'LEDE', 'LEDF', 'LEDG', 'LASER650']:
+        row = row + [sysData[M][LED]['target']]
+    row = row + [sysData[M]['UV']['target'] * sysData[M]['UV']['ON']]
+    for FP in ['FP1', 'FP2', 'FP3']:
+        if sysData[M][FP]['ON'] == 1:
+            row = row + [sysData[M][FP]['Base']]
+            row = row + [sysData[M][FP]['Emit1']]
+            row = row + [sysData[M][FP]['Emit2']]
+        else:
+            row = row + ([0.0, 0.0, 0.0])
+
+    row = row + [sysData[M]['Custom']['param1'] * float(sysData[M]['Custom']['ON'])]
+    row = row + [sysData[M]['Custom']['param2'] * float(sysData[M]['Custom']['ON'])]
+    row = row + [sysData[M]['Custom']['param3'] * float(sysData[M]['Custom']['ON'])]
+    row = row + [sysData[M]['Custom']['Status'] * float(sysData[M]['Custom']['ON'])]
+    row = row + [sysData[M]['Zigzag']['target'] * float(sysData[M]['Zigzag']['ON'])]
+    row = row + [sysData[M]['GrowthRate']['current'] * sysData[M]['Zigzag']['ON']]
+
+    data = {}
+    if (len(row) == len(fieldnames)):
+        data = dict(zip(fieldnames, row))
+    else:
+        print('send_data: mismatch between column num and header num')
+
+    data = json.dumps(data, ensure_ascii=False, indent=4)
+    send_message(M + ": " + data)
+    
+    return 0
 
 
 
@@ -2190,7 +2258,7 @@ def ExperimentStartStop(M,value):
         sysDevices[M]['Experiment'].setDaemon(True)
         sysDevices[M]['Experiment'].start();
         
-        send_message("Experiment Start")
+        send_message(M + " Experiment Start")
         
     else:
         sysData[M]['Experiment']['ON']=0
@@ -2325,6 +2393,7 @@ def runExperiment(M,placeholder):
 
     #### Writing Results to data files
     csvData(M) #This command writes system data to a CSV file for future keeping.
+    send_data(M)
     #And intermittently write the setup parameters to a data file. 
     if(sysData[M]['Experiment']['cycles']%10==1): #We only write whole configuration file each 10 cycles since it is not really that important. 
         TempStartTime=sysData[M]['Experiment']['startTimeRaw']
@@ -2364,7 +2433,7 @@ def runExperiment(M,placeholder):
         sysData[M]['OD']['ON'] = 0
         addTerminal(M, 'Experiment End')
         turnEverythingOff(M)
-        send_message("Experiment End")
+        send_message(M + " Experiment End")
 
     elif (sysData[M]['Experiment']['ON'] and sysData[M]['Experiment']['threadCount']==currentThread):
         sysDevices[M]['Experiment']=Thread(target = runExperiment, args=(M,'placeholder'))
@@ -2374,7 +2443,7 @@ def runExperiment(M,placeholder):
     else: 
         turnEverythingOff(M)
         addTerminal(M,'Experiment Stopped')
-        send_message("Experiment Stopped")
+        send_message(M + " Experiment Stopped")
 
     for thread in threading.enumerate():
         print('***', thread.name)
