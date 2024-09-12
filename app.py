@@ -1437,19 +1437,7 @@ def CustomProgram(M):
             SetOutputOn(M,'UV',1) #Activate UV
             time.sleep(Dose) #Wait for dose to be administered
             SetOutputOn(M,'UV',0) #Deactivate UV
-
-    elif (program=="C7"):
-        # pass
-        # UVTime = 10
-        # SetOutputOn(M, 'UV', 1)
-        # time.sleep(UVTime)
-        # SetOutputOn(M, 'UV', 0)
-        # SetOutputOn(M, 'Pump3', 1)
-        # SetOutputOn(M, 'Pump4', 1)
-        SetOutputOn(M, 'LEDD', 1)
-
                 
-    
     return
 
 def CustomLEDCycle(M,LED,Value):
