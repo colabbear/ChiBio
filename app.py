@@ -1623,6 +1623,13 @@ def I2CCom(M,device,rw,hl,data1,data2,SMBUSFLAG):
             print(str(datetime.now()) + 'Failed to communicate to Multiplexer 20 times. Disabling hardware and software!')
             # tries=-1
 
+            toggleWatchdog()  # Flip the watchdog pin to ensure it is working.
+            GPIO.output('P8_15', GPIO.LOW)  # Flip the Multiplexer RESET pin. Note this reset function works on Control Board V1.2 and later.
+            time.sleep(0.1)
+            GPIO.output('P8_15', GPIO.HIGH)
+            time.sleep(0.1)
+            print(str(datetime.now()) + 'Did multiplexer hard-reset on ' + str(M))
+
             addTerminal(M, "The device sleep due to error that failed to communicate to Multiplexer 20 times")
             send_message(M + " sleep due to error that failed to communicate to Multiplexer 20 times")
             lock.release()
