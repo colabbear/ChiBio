@@ -28,6 +28,6 @@ For more information, and software setup guide, please see https://chi.bio/softw
 * Changes for low average flow rate
 <br>
 <br>
-<br>
+
 # Required additonal setup guide
 
