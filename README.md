@@ -11,10 +11,9 @@ For more information, and software setup guide, please see https://chi.bio/softw
 <br>
 
 # Additonal Fucntions and several changes
-<br>
 <img src="https://github.com/user-attachments/assets/fde13729-8de5-405d-94c3-8f008db9679a" width="200"/>
 
-<br>
+<br> <br>
 * Real-time notifications using Discord Webhooks
 <br>
 <img src="https://github.com/user-attachments/assets/2cc15031-4f3e-4146-94bc-225f1cb6fb95" width="300"/>
