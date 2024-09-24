@@ -27,4 +27,14 @@ For more information, and software setup guide, please see https://chi.bio/softw
 <br> <br> <br>
 
 # Required additonal setup guide
+<p>1. Connect the BeagleBone Black board to the internet by following this <a href="https://www.learningaboutelectronics.com/Articles/How-to-connect-the-beaglebone-black-board-to-the-internet.php">link</a></p>
 
+<p>2. pip3 install requests</p>
+
+<p>3. pip3 install discord-webhook</p>
+
+<p>4. pip3 install matplotlib</p>
+
+<p>5. sudo apt-get install libopenjp2-7</p>
+
+<p>6. Create a Discord server and channel for notifications, generate a webhook, and put the generated webhook URL into the DISCORD_WEBHOOK_URL.txt file.</p>
