@@ -26,7 +26,7 @@ For more information, and software setup guide, please see https://chi.bio/softw
 * Changes for low average flow rate
 <br> <br> <br>
 
-# Required additonal setup guide
+# Required additional setup guide
 <p>1. Connect the BeagleBone Black board to the internet by following this <a href="https://www.learningaboutelectronics.com/Articles/How-to-connect-the-beaglebone-black-board-to-the-internet.php">link</a>.</p>
 
 <p>2. pip3 install requests</p>
