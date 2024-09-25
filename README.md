@@ -7,7 +7,7 @@ Note that from 06-04-2021 installation should follow V2.0 of the software guide,
 For more information, and software setup guide, please see https://chi.bio/software/
 <br> <br> <br>
 
-# Additonal fucntions and several changes
+# Additional fucntions and several changes
 <img src="https://github.com/user-attachments/assets/fde13729-8de5-405d-94c3-8f008db9679a" width="200"/>
 
 <br> <br>
