@@ -1,0 +1,55 @@
+
+
+    {% for key, i in extraPumps.items() %}
+
+        <div class="col-3" align='center'>
+        <div id="PumpExtra{{ key }}Container"  class="container" style="border:2px solid #000000">
+            <div class="row">
+                <div class="col-2 align-self-center">
+                 <b><font color="000000"> {{ key }} <br>(Extra)</font></b>
+
+              </div>
+              <div class="col-2 align-self-center">
+                  <p style="font-size: 12.5px; display:inline;">Current RPM:</p>
+                  <div id="PumpExtra{{ key }}Current" style="display:inline;">0</div>
+
+                  <p style="font-size: 12.5px; display:inline;">Current Direction:</p>
+                  <div id="PumpExtra{{ key }}CurrentDirection" style="display:inline;">0</div>
+
+<!--                  <br>-->
+<!--                  Flow rate expected:-->
+<!--                  <div id="PumpExtra{{ key }}Flowrate" style="display:inline;">0</div>-->
+
+              </div>
+
+              <div class="col-2 align-self-center">
+                <p style="font-size: 12.5px; display:inline;">Ready RPM:</p>
+                <div id="PumpExtra{{ key }}Ready" style="display:inline;">0</div>
+
+                <p style="font-size: 12.5px; display:inline;">Ready Direction:</p>
+                <div id="PumpExtra{{ key }}ReadyDirection" style="display:inline;">0</div>
+              </div>
+
+              <div class="col-3 align-self-center">
+                  New RPM: <br>
+                  <input id="PumpExtra{{ key }}Input" type="number" size="8" value=0 style="width: 6em"/>
+
+              </div>
+
+              <div class="col-5 align-self-center">
+                   <fieldset id='btn_fieldset_PumpExtra{{ key }}'>
+                   <button id="PumpExtra{{ key }}Set">Set</button> <button id="PumpExtra{{ key }}Switch" >Switch</button><button id="PumpExtra{{ key }}Direction" >Direction</button>
+                   </fieldset>
+              </div>
+
+              <div class="col-5 align-self-center">
+                  <input id="PumpExtra{{ key }}PortInput" type="text" value="{{ i.port }}" style="width: 6em"/>
+                  <button id="PumpExtra{{ key }}Connect">Connect/Disconnect</button>
+              </div>
+
+          </div>
+        </div>
+        </div>
+
+
+        {% endfor %}

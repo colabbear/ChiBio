@@ -1,4 +1,7 @@
 
+var globalData = null;
+let lastScriptContent = '';
+const scriptId = 'dynamic-script';
 
 function getSysData(){
     
@@ -9,7 +12,22 @@ function getSysData(){
            dataType: "json",
            
            success:function(data){
-               updateData(data);
+               if (data.isHtmlUpdated == 1) {
+                   document.getElementById("contentExtraPump").innerHTML = `${data.html}`;
+                    const existingScript = document.getElementById(scriptId);
+                    if (existingScript) {
+                        existingScript.remove();
+                    }
+                   
+                    const script = document.createElement("script");
+                    script.id = scriptId;
+                    script.text = data.script;
+                    document.body.appendChild(script);    
+               }
+               
+                
+               globalData = data.outputdata;
+               updateDataFunction(data.outputdata);
            }
 
             }); 
@@ -612,11 +630,7 @@ function updateData(data){
         }
 
         if (data.threading.retry.ON == 1) {
-            document.getElementById('btn_fieldset1').disabled = true;
-            document.getElementById('btn_fieldset2').disabled = true;
-            document.getElementById('btn_fieldset3').disabled = true;
-            document.getElementById('btn_fieldset4').disabled = true;
-            document.getElementById('btn_fieldset5').disabled = true;
+            document.getElementById('btn_fieldset').disabled = true;
         }
 
 }

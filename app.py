@@ -14,7 +14,6 @@ from datetime import datetime, date
 import Adafruit_GPIO.I2C as I2C
 import Adafruit_BBIO.GPIO as GPIO
 import time
-import serial
 import simplejson
 import copy
 import csv
@@ -25,6 +24,131 @@ import json
 import matplotlib.pyplot as plt
 from discord_webhook import DiscordWebhook, DiscordEmbed
 
+import sys
+import struct
+import serial
+import serial.tools.list_ports
+
+
+'''
+-----------------------------------------------------------
+Peristaltic Pump Control Library Using Modbus Protocol
+-----------------------------------------------------------
+'''
+
+# Reference: https://blog.darwin-microfluidics.com/how-to-control-a-labv-pump-using-the-modbus-protocol/
+
+#------------------------------------------------------#
+#   LIBRARY MANAGING THE COMMUNICATION WITH THE PUMP   #
+#------------------------------------------------------#
+
+class pumpExtra:
+
+    # Initialize the object and establish a serial connection with the corresponding data format
+    def __init__(self, port, address=1, baudrate=9600, parity='E', bytesize=8, stopbits=1, timeout=1):
+        self.ser = serial.Serial(port=port, baudrate=baudrate, parity=parity,
+                                 bytesize=bytesize, stopbits=stopbits, timeout=timeout)
+        self.address = address
+
+    # Connect the pump
+    def connect(self):
+        if not self.ser.is_open:
+            self.ser.open()
+
+    # Close the serial connection
+    def disconnect(self):
+        if self.ser.is_open:
+            self.ser.close()
+
+    # Calculate the CRC (Cyclic Redundancy Check) for data integrity as
+    # explained in "The MODBUS RTU Communication Protocol" section
+    def _calculate_crc(self, data):
+        crc = 0xFFFF
+        for byte in data:
+            crc ^= byte
+            for _ in range(8):
+                if crc & 0x0001:
+                    crc >>= 1
+                    crc ^= 0xA001
+                else:
+                    crc >>= 1
+        return crc.to_bytes(2, byteorder='little')
+
+    # Convert data into bytes for communication
+    def _prepare_data(self, data, data_type):
+        if data_type == 'float':
+            return struct.pack('>f', data)
+        elif data_type == 'int':
+            return data.to_bytes(2, byteorder='big')
+        else:
+            raise ValueError("Data type not supported.")
+
+    # Construct, send commands to the pump and verify the response
+    def _send_command(self, function_code, register_address, data, data_type):
+        data_bytes = self._prepare_data(data, data_type)
+        payload = bytearray([self.address, function_code])
+        payload.extend(register_address.to_bytes(2, byteorder='big'))
+
+        if function_code == 0x10:  # Write multiple registers
+            number_of_registers = len(data_bytes) // 2
+            payload.extend(number_of_registers.to_bytes(2, byteorder='big'))
+            payload.append(len(data_bytes))
+            payload.extend(data_bytes)
+        else:
+            payload.extend(data_bytes)
+
+        crc = self._calculate_crc(payload)
+        payload.extend(crc)
+        print(f"Sending payload: {payload.hex()}")  # Debug: Print the payload
+
+        self.ser.write(payload)
+        response = self.ser.read(8) # Adjust as per the device response length
+        if len(response) != 8:
+            raise ValueError("Invalid response length")
+        if self._calculate_crc(response[:-2]) != response[-2:]:
+            raise ValueError("Invalid CRC")
+        return response
+
+    #------------------------------#
+    #   BASIC PARAMETERS SETTING   #
+    #------------------------------#
+
+    # Start the pump
+    def start_pump(self):
+        print("Starting pump...")
+        response = self._send_command(0x06, 0x03E8, 0x0001, 'int')
+        print(f"Start pump response: {response.hex()}")
+
+    # Stop the pump
+    def stop_pump(self):
+        print("Stopping pump...")
+        response = self._send_command(0x06, 0x03E8, 0x0000, 'int')
+        print(f"Stop pump response: {response.hex()}")
+
+    # Set the direction of rotation
+    def set_direction(self, direction):
+        # # if pump is running, Set direction after pump is stopped
+        # if pump is running:
+        #     self.stop_pump()
+        print(f"Setting direction to {direction}...")
+        data = 0x0001 if direction.upper() == "CW" else 0x0000
+        response = self._send_command(0x06, 0x03E9, data, 'int')
+        print(f"Set direction response: {response.hex()}")
+        # if pump was running:
+        #     self.start_pump()
+
+    # Set the speed of the pump in RPM
+    def set_speed(self, speed):
+        print(f"Setting speed to {speed} RPM...")
+        response = self._send_command(0x10, 0x03EA, speed, 'float')
+        print(f"Set speed response: {response.hex()}")
+
+    # # Set the flow rate in mL/min
+    # def set_flow_rate(self, flow_rate):
+    #     print(f"Setting flow rate to {flow_rate} mL/min...")
+    #     response = self._send_command(0x10, 0x03EC, flow_rate, 'float')
+    #     print(f"Set flow rate response: {response.hex()}")
+
 class timeEx:
     @staticmethod
     def sleep(delay):
@@ -33,10 +157,42 @@ class timeEx:
         while current < end:
             current = time.perf_counter_ns()
             time.sleep(0)
-            
-with open("./DISCORD_WEBHOOK_URL.txt", encoding="UTF-8") as f:
-    temp = f.readline()
-DISCORD_WEBHOOK_URL = temp
+
+
+
+# Reference: https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
+def serial_ports():
+    """ Lists serial port names
+
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
+    """
+    ports = serial.tools.list_ports.comports()
+
+    ports = [port.name for port in ports]
+
+    if sys.platform.startswith('win'):
+        pass
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = ['/dev/' + i for i in ports]
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+
+    return result
+
+
 
 def send_message(msg):
     """discord message"""
@@ -49,69 +205,10 @@ def send_message(msg):
     except requests.ConnectionError:
         print("Connection Error")
 
-    print(message)            
+    print(message)
 
-# def send_data(M):
-#     global sysData
-#     M = str(M)
 
-#     fieldnames = ['exp_time', 'od_measured', 'od_setpoint', 'od_zero_setpoint', 'thermostat_setpoint', 'heating_rate',
-#                   'internal_air_temp', 'external_air_temp', 'media_temp', 'opt_gen_act_int', 'pump_1_rate',
-#                   'pump_2_rate',
-#                   'pump_3_rate', 'pump_4_rate', 'media_vol', 'stirring_rate', 'LED_395nm_setpoint',
-#                   'LED_457nm_setpoint',
-#                   'LED_500nm_setpoint', 'LED_523nm_setpoint', 'LED_595nm_setpoint', 'LED_623nm_setpoint',
-#                   'LED_6500K_setpoint', 'laser_setpoint', 'LED_UV_int', 'FP1_base', 'FP1_emit1', 'FP1_emit2',
-#                   'FP2_base',
-#                   'FP2_emit1', 'FP2_emit2', 'FP3_base', 'FP3_emit1', 'FP3_emit2', 'custom_prog_param1',
-#                   'custom_prog_param2',
-#                   'custom_prog_param3', 'custom_prog_status', 'zigzag_target', 'growth_rate']
 
-#     row = [sysData[M]['time']['record'][-1],
-#           sysData[M]['OD']['record'][-1],
-#           sysData[M]['OD']['targetrecord'][-1],
-#           sysData[M]['OD0']['target'],
-#           sysData[M]['Thermostat']['record'][-1],
-#           sysData[M]['Heat']['target'] * float(sysData[M]['Heat']['ON']),
-#           sysData[M]['ThermometerInternal']['record'][-1],
-#           sysData[M]['ThermometerExternal']['record'][-1],
-#           sysData[M]['ThermometerIR']['record'][-1],
-#           sysData[M]['Light']['record'][-1],
-#           sysData[M]['Pump1']['record'][-1],
-#           sysData[M]['Pump2']['record'][-1],
-#           sysData[M]['Pump3']['record'][-1],
-#           sysData[M]['Pump4']['record'][-1],
-#           sysData[M]['Volume']['target'],
-#           sysData[M]['Stir']['target'] * sysData[M]['Stir']['ON'], ]
-#     for LED in ['LEDA', 'LEDB', 'LEDC', 'LEDD', 'LEDE', 'LEDF', 'LEDG', 'LASER650']:
-#         row = row + [sysData[M][LED]['target']]
-#     row = row + [sysData[M]['UV']['target'] * sysData[M]['UV']['ON']]
-#     for FP in ['FP1', 'FP2', 'FP3']:
-#         if sysData[M][FP]['ON'] == 1:
-#             row = row + [sysData[M][FP]['Base']]
-#             row = row + [sysData[M][FP]['Emit1']]
-#             row = row + [sysData[M][FP]['Emit2']]
-#         else:
-#             row = row + ([0.0, 0.0, 0.0])
-
-#     row = row + [sysData[M]['Custom']['param1'] * float(sysData[M]['Custom']['ON'])]
-#     row = row + [sysData[M]['Custom']['param2'] * float(sysData[M]['Custom']['ON'])]
-#     row = row + [sysData[M]['Custom']['param3'] * float(sysData[M]['Custom']['ON'])]
-#     row = row + [sysData[M]['Custom']['Status'] * float(sysData[M]['Custom']['ON'])]
-#     row = row + [sysData[M]['Zigzag']['target'] * float(sysData[M]['Zigzag']['ON'])]
-#     row = row + [sysData[M]['GrowthRate']['current'] * sysData[M]['Zigzag']['ON']]
-
-#     data = {}
-#     if (len(row) == len(fieldnames)):
-#         data = dict(zip(fieldnames, row))
-#     else:
-#         print('send_data: mismatch between column num and header num')
-
-#     data = json.dumps(data, ensure_ascii=False, indent=4)
-#     send_message(M + ": " + data)
-    
-#     return 0
-    
 def send_ExperimentDataImage(M):
     global sysData
     M = str(M)
@@ -183,6 +280,10 @@ def send_ExperimentDataImage(M):
 application = Flask(__name__)
 application.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 #Try this https://stackoverflow.com/questions/23112316/using-flask-how-do-i-modify-the-cache-control-header-for-all-output/23115561#23115561
 
+with open("./DISCORD_WEBHOOK_URL.txt", encoding="UTF-8") as f:
+    temp = f.readline()
+DISCORD_WEBHOOK_URL = temp
+
 lock=Lock()
 condition = {}
 for i in ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7']:
@@ -193,6 +294,22 @@ for i in ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7']:
 theValue = 1.0
 periodTime = 5 # seconds
 # totalExperimentTime = 36 # hours
+
+isHtmlUpdated = 0
+ports_extraPump = []
+extraPumps = {}
+extraPumpDevices = {}
+
+extraPump_data = {
+    "port" : "temp",
+    "ConnectionON" : 0,
+    "ON" : 0,
+    "rpm" : 10,
+    "direction" : "CW",
+    "rpmReady" : 10,
+    "directionReady" : "CW",
+}
+
 
 
 #Sysdata is a structure created for each device and contains the setup / measured data related to that device during an experiment. All of this information is passed into the user interface during an experiment.
@@ -608,6 +725,8 @@ def index():
     #Function responsible for sending appropriate device's data to user interface. 
     global sysData
     global sysItems
+    global ports_extraPump
+    global extraPumps
     
     outputdata=sysData[sysItems['UIDevice']]
     for M in ['M0','M1','M2','M3','M4','M5','M6','M7']:
@@ -615,20 +734,41 @@ def index():
                 outputdata['presentDevices'][M]=1
             else:
                 outputdata['presentDevices'][M]=0
-    return render_template('index.html',**outputdata)
+    return render_template('index.html',**outputdata, ports_extraPump=ports_extraPump, extraPumps=extraPumps)
     
 @application.route('/getSysdata/')
 def getSysdata():
     #Similar to function above, packages data to be sent to UI.
     global sysData
     global sysItems
+    global extraPumps
+    global isHtmlUpdated
+
+    
+    lock.acquire()
+
     outputdata=sysData[sysItems['UIDevice']]
+    outputdata.update(extraPumps)
     for M in ['M0','M1','M2','M3','M4','M5','M6','M7']:
             if sysData[M]['present']==1:
                 outputdata['presentDevices'][M]=1
             else:
                 outputdata['presentDevices'][M]=0
-    return jsonify(outputdata)
+                
+    html_content = render_template('pumpExtra.html',**outputdata, ports_extraPump=ports_extraPump, extraPumps=extraPumps)
+    html_script = render_template('pumpExtraScript.html',**outputdata, ports_extraPump=ports_extraPump, extraPumps=extraPumps)
+
+    data = {
+        "isHtmlUpdated" : isHtmlUpdated,
+        "html" : html_content,
+        "script" : html_script,
+        "outputdata" : outputdata
+    }
+    
+    isHtmlUpdated = 0
+    lock.release()
+
+    return jsonify(data)
 
 @application.route('/changeDevice/<M>',methods=['POST'])
 def changeDevice(M):
@@ -1437,7 +1577,19 @@ def CustomProgram(M):
             SetOutputOn(M,'UV',1) #Activate UV
             time.sleep(Dose) #Wait for dose to be administered
             SetOutputOn(M,'UV',0) #Deactivate UV
+
+    elif (program=="C7"):
+        # pass
+        # UVTime = 10
+        # SetOutputOn(M, 'UV', 1)
+        # time.sleep(UVTime)
+        # SetOutputOn(M, 'UV', 0)
+        # SetOutputOn(M, 'Pump3', 1)
+        # SetOutputOn(M, 'Pump4', 1)
+        SetOutputOn(M, 'LEDD', 1)
+
                 
+    
     return
 
 def CustomLEDCycle(M,LED,Value):
@@ -1610,9 +1762,9 @@ def I2CCom(M,device,rw,hl,data1,data2,SMBUSFLAG):
             out=0
             print(str(datetime.now()) + 'Failed to communicate to Multiplexer 20 times. Disabling hardware and software!')
             # tries=-1
-
-            toggleWatchdog()  # Flip the watchdog pin to ensure it is working.
-            GPIO.output('P8_15', GPIO.LOW)  # Flip the Multiplexer RESET pin. Note this reset function works on Control Board V1.2 and later.
+            
+            toggleWatchdog()  #Flip the watchdog pin to ensure it is working.
+            GPIO.output('P8_15', GPIO.LOW) #Flip the Multiplexer RESET pin. Note this reset function works on Control Board V1.2 and later.
             time.sleep(0.1)
             GPIO.output('P8_15', GPIO.HIGH)
             time.sleep(0.1)
@@ -1620,6 +1772,7 @@ def I2CCom(M,device,rw,hl,data1,data2,SMBUSFLAG):
 
             addTerminal(M, "The device sleep due to error that failed to communicate to Multiplexer 20 times")
             send_message(M + " sleep due to error that failed to communicate to Multiplexer 20 times")
+            
             lock.release()
             with condition[M]:
                 sysData[M]['threading']['wait']['ON'] = 1
@@ -2337,6 +2490,161 @@ def RetryConnectingMultiplexer(M):
         sysData[M]['threading']['wait']['ON'] = 0
         with condition[M]:
             condition[M].notify_all()
+
+    return ('', 204)
+    
+    
+
+
+@application.route("/extraPump_scan", methods=['POST'])
+def extraPump_scan():
+    global extraPumps
+    global extraPump_data
+    global extraPumpDevices
+    global ports_extraPump
+    global isHtmlUpdated
+    
+    lock.acquire()
+    
+    currentExtraPump = list(extraPumps.keys())
+    
+    if len(currentExtraPump) > 0:
+        currentExtraPump.sort(reverse=True)
+        primaryKey = int(currentExtraPump[0][1:]) + 1
+    else:
+        primaryKey = 1
+    
+    # ports_extraPump = serial_ports()
+    ports = serial.tools.list_ports.comports()
+    ports_extraPump = [port.name for port in ports]
+    
+    for i in ports_extraPump:
+        temp = 0
+        for j in currentExtraPump:
+            if i == extraPumps[j]["port"]:
+                temp = 1
+        
+        if temp == 0:
+            extraPumps["P" + str(primaryKey)] = copy.deepcopy(extraPump_data)
+            extraPumps["P" + str(primaryKey)]["port"] = i
+            extraPumpDevices["P" + str(primaryKey)] = 0
+            primaryKey += 1
+                
+    key_pop = []
+    if len(currentExtraPump) > 0:
+        for key, i in extraPumps.items():
+            if extraPumps[key]["port"] not in ports_extraPump:
+                key_pop.append(key)
+    for key in key_pop:
+        extraPumps.pop(key, None)
+        extraPumpDevices.pop(key, None)
+    
+    isHtmlUpdated = 1
+    lock.release()
+    
+    return ('', 204)
+
+@application.route("/extraPump_connect/<pump>/<pump_port>", methods=['POST'])
+def extraPump_connect(pump, pump_port):
+    global extraPumps
+    global extraPumpDevices
+    
+    pump = str(pump)
+    pump_port = str(pump_port)
+    print(pump_port)
+    
+    lock.acquire()
+
+    if extraPumps[pump]["ConnectionON"] == 0:
+        extraPumps[pump]["ConnectionON"] = 1
+        extraPumpDevices[pump] = pumpExtra(port="/dev/"+pump_port, address=1)  # Change port and address according to your setup
+        extraPumpDevices[pump].connect()
+    else:
+        extraPumps[pump]["ConnectionON"] = 0
+        extraPumpDevices[pump].stop_pump()
+        extraPumpDevices[pump].disconnect()
+        
+    isHtmlUpdated = 1
+    lock.release()
+
+    print(pump + " Current connection state : " + str(extraPumps[pump]["ConnectionON"]))
+
+    return ('', 204)
+
+@application.route("/extraPump_setRPM/<pump>/<rpm>", methods=['POST'])
+def extraPump_setRPM(pump, rpm):
+    global extraPumps
+    global isHtmlUpdated
+    pump = str(pump)
+    rpm = round(float(rpm), 1)
+
+    lock.acquire()
+
+    if rpm > 400.0:
+        rpm = 400.0
+    elif rpm < 0.1:
+        rpm = 0.1
+
+    extraPumps[pump]["rpmReady"] = rpm
+
+    isHtmlUpdated = 1
+    lock.release()
+
+    print(pump + " Ready RPM : " + str(extraPumps[pump]["rpmReady"]))
+
+    return ('', 204)
+
+@application.route("/extraPump_setDirection/<pump>", methods=['POST'])
+def extraPump_setDirection(pump):
+    global extraPumps
+    global isHtmlUpdated
+    pump = str(pump)
+
+    lock.acquire()
+
+    if extraPumps[pump]["directionReady"] == "CW":
+        extraPumps[pump]["directionReady"] = "CCW"
+    else:
+        extraPumps[pump]["directionReady"] = "CW"
+
+    isHtmlUpdated = 1
+    lock.release()
+
+    print(pump + " Ready direction : " + extraPumps[pump]["directionReady"])
+
+    return ('', 204)
+
+@application.route("/extraPump_switch/<pump>", methods=['POST'])
+def extraPump_switch(pump):
+    global extraPumps
+    global isHtmlUpdated
+    pump = str(pump)
+    
+    lock.acquire()
+
+    if extraPumps[pump]["ON"] == 0:
+        try:
+            extraPumpDevices[pump].set_direction(extraPumps[pump]["directionReady"])
+            extraPumpDevices[pump].set_speed(extraPumps[pump]["rpmReady"])
+            extraPumpDevices[pump].start_pump()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        finally:
+            extraPumps[pump]["ON"] = 1
+            extraPumps[pump]["direction"] = extraPumps[pump]["directionReady"]
+            extraPumps[pump]["rpm"] = extraPumps[pump]["rpmReady"]
+    else:
+        try:
+            extraPumpDevices[pump].stop_pump()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        finally:
+            extraPumps[pump]["ON"] = 0
+
+    print(pump + " Current state : " + str(extraPumps[pump]["ON"]))
+    
+    isHtmlUpdated = 1
+    lock.release()
 
     return ('', 204)
 

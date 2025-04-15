@@ -1,0 +1,94 @@
+        {% for key, i in extraPumps.items() %}
+
+            $(function() {
+                $('#PumpExtra{{ key }}Connect').click(function(){
+                  var value = $('#PumpExtra{{ key }}PortInput').val();
+                  var targetURL = '/extraPump_connect/{{ key }}/' + value;
+                   $.ajax({
+                       type:'POST',
+                       url: targetURL,
+                       success:function(response){
+                       getSysData();
+                     }
+                 });
+                 })
+            });
+  
+            $(function() {
+                $('#PumpExtra{{ key }}Set').click(function(){
+                  var value = $('#PumpExtra{{ key }}Input').val();
+                  var targetURL = '/extraPump_setRPM/{{ key }}/' + value;
+                   $.ajax({
+                       type:'POST',
+                       url: targetURL,
+                       success:function(response){
+                       getSysData();
+                     }
+                 });
+                 })
+            });
+
+            $(function() {
+                $('#PumpExtra{{ key }}Switch').click(function(){
+
+                   var targetURL = '/extraPump_switch/{{ key }}';
+                   $.ajax({
+                       type:'POST',
+                       url: targetURL,
+                       success:function(response){
+                       getSysData();
+                     }
+                 });
+                 })
+            });
+ 
+            $(function() {
+                $('#PumpExtra{{ key }}Direction').click(function(){
+
+                   var targetURL = '/extraPump_setDirection/{{ key }}';
+                   $.ajax({
+                       type:'POST',
+                       url: targetURL,
+                       success:function(response){
+                       getSysData();
+                     }
+                 });
+                 })
+            });
+            
+        {% endfor %}
+    
+
+            var updateDataTemp = updateData;
+            updateDataFunction = function(data) {
+                updateDataTemp(data);
+
+                {% for key, i in extraPumps.items() %}
+
+                if (globalData.{{ key }} && globalData.{{ key }}.ON==1){
+                 document.getElementById("PumpExtra{{ key }}Switch").setAttribute("style", "border-style:inset;background-color:lightblue");
+
+                } else {
+                     document.getElementById("PumpExtra{{ key }}Switch").setAttribute("style", "");
+                }
+
+
+
+                if (globalData.{{ key }} && globalData.{{ key }}.ConnectionON==1){
+                     document.getElementById("PumpExtra{{ key }}Connect").setAttribute("style", "border-style:inset;background-color:lightblue");
+                     document.getElementById('btn_fieldset_PumpExtra{{ key }}').disabled = Boolean(0);
+
+                } else {
+                     document.getElementById("PumpExtra{{ key }}Connect").setAttribute("style", "");
+                     document.getElementById('btn_fieldset_PumpExtra{{ key }}').disabled = Boolean(1);
+                }
+
+                document.getElementById("PumpExtra{{ key }}Current").innerHTML=globalData.{{ key }}.rpm.toFixed(1);
+                document.getElementById("PumpExtra{{ key }}CurrentDirection").innerHTML=globalData.{{ key }}.direction;
+                document.getElementById("PumpExtra{{ key }}Ready").innerHTML=globalData.{{ key }}.rpmReady.toFixed(1);
+                document.getElementById("PumpExtra{{ key }}ReadyDirection").innerHTML=globalData.{{ key }}.directionReady;
+
+                {% endfor %}
+
+            }
+    
